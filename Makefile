@@ -5,7 +5,7 @@ SHELL = /usr/bin/env
 
 .ONESHELL:
 
-include make/postgresql-changes.mk make/favicon.mk
+include make/articles.mk make/favicon.mk
 
 # Public 
 .PHONY: clone-public
@@ -31,9 +31,6 @@ themes/devise/.git/config:
 		"https://github.com/austingebauer/devise" \
 		"themes/devise"
 
-.PHONY: articles
-articles: postgresql-changes
-
 .PHONY: generate
 generate: favicon articles clone-public clone-theme
 	# Generating static files
@@ -51,6 +48,9 @@ deploy: generate
 clean:
 	rm -Rf "public"
 	rm -Rf "themes/devise"
+	rm -Rf "static/favicon.ico"
+	rm -Rf "posts/posgresql-changes.md"
+	rm -Rf "repos"
 
 .PHONY: serve
 serve:
