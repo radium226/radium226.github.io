@@ -5,16 +5,6 @@
     <link>https://radium226.github.io/</link>
     <description>Recent content on My New Hugo Site</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language>
-    <lastBuildDate>Sun, 27 Sep 2020 21:56:45 +0200</lastBuildDate><atom:link href="https://radium226.github.io/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>Hello</title>
-      <link>https://radium226.github.io/posts/hello/</link>
-      <pubDate>Sun, 27 Sep 2020 21:56:45 +0200</pubDate>
-      
-      <guid>https://radium226.github.io/posts/hello/</guid>
-      <description></description>
-    </item>
-    
+    <language>en-us</language><atom:link href="https://radium226.github.io/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>
