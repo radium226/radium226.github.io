@@ -5,6 +5,8 @@ SHELL = /usr/bin/env
 
 .ONESHELL:
 
+include make/postgresql-changes.mk
+
 # Public 
 .PHONY: clone-public
 clone-public: public/.git/config
@@ -29,8 +31,11 @@ themes/devise/.git/config:
 		"https://github.com/austingebauer/devise" \
 		"themes/devise"
 
+.PHONY: articles
+articles: postgresql-changes
+
 .PHONY: generate
-generate: public/.git/config themes/devise/.git/config
+generate: articles clone-public clone-theme
 	# Generating static files
 	hugo \
 		--cleanDestinationDir \
