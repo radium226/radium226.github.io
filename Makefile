@@ -5,7 +5,7 @@ SHELL = /usr/bin/env
 
 .ONESHELL:
 
-include make/articles.mk make/favicon.mk
+include make/git.mk make/articles.mk make/favicon.mk
 
 # Public 
 .PHONY: clone-public
@@ -30,8 +30,10 @@ themes/devise/.git/config:
 		--branch "master" \
 		"https://github.com/austingebauer/devise" \
 		"themes/devise"
+	#make git-configure GIT_FOLDER="repos/postgresql-changes"
 
 .PHONY: generate
+## Generate the website
 generate: favicon articles clone-public clone-theme
 	# Generating static files
 	hugo \
@@ -39,13 +41,15 @@ generate: favicon articles clone-public clone-theme
 		--destination "public"
 
 .PHONY: deploy
-deploy: generate
+## Deploy the website
+deploy: generate 
 	git -C "public" add --all
 	git -C "public" commit -m "$(shell git log -1 --pretty="%B")"
 	git -C "public" push -u "origin" "public"
 
 .PHONY: clean
-clean:
+## Clean all the stuff
+clean: 
 	rm -Rf "public"
 	rm -Rf "themes/devise"
 	rm -Rf "static/favicon.ico"
@@ -53,5 +57,10 @@ clean:
 	rm -Rf "repos"
 
 .PHONY: serve
-serve:
+serve: generate
 	hugo server
+
+.PHONY: help
+## Display available rules
+help:
+	@echo "$$(tput bold)Available rules:$$(tput sgr0)";echo;sed -ne"/^## /{h;s/.*//;:d" -e"H;n;s/^## //;td" -e"s/:.*//;G;s/\\n## /---/;s/\\n/ /g;p;}" ${MAKEFILE_LIST}|LC_ALL='C' sort -f|awk -F --- -v n=$$(tput cols) -v i=19 -v a="$$(tput setaf 6)" -v z="$$(tput sgr0)" '{printf"%s%*s%s ",a,-i,$$1,z;m=split($$2,w," ");l=n-i;for(j=1;j<=m;j++){l-=length(w[j])+1;if(l<= 0){l=n-i-length(w[j])-1;printf"\n%*s ",-i," ";}printf"%s ",w[j];}printf"\n";}'|more $(shell test $(shell uname) == Darwin && echo '-Xr')

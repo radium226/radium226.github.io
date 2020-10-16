@@ -1,7 +1,12 @@
 baseURL = "https://radium226.github.io"
-languageCode = "en-us"
-title = "My New Hugo Site"
 theme = "devise"
+title = "~adrien"
+languageCode = "en-us"
+relativeURLs = true
+enableEmoji = true
+googleAnalytics = ""
+enableRobotsTXT = true
+copyright = "&copy 2020"
 
 [menu]
   [[menu.main]]
@@ -10,12 +15,22 @@ theme = "devise"
     url = "/"
     weight = 1
   [[menu.main]]
-    name = "Posts"
-    pre = "pen-tool"
-    url = "/posts/"
+    name = "Articles"
+    url = "/articles/"
     weight = 2
-  [[menu.main]]
-    name = "Tags"
-    pre = "tag"
-    url = "/tags/"
-    weight = 3
+
+[params]
+  description = "Your meta description"
+  header_title = "~adrien"
+  header_subtitle = "Tech stuff! "
+  recent_posts = 5
+  mainSections = ["articles"]
+  [params.style]
+    backgroundColor = "#f8f9fa"
+    fontColor = "#212529"
+  [[params.social]]
+    fa_icon = "fab fa-github fa-1x"
+    href = "http://github.com/radium226"
+  [[params.social]]
+    fa_icon = "fab fa-linkedin-in fa-1x"
+    href = "https://fr.linkedin.com/public-profile/in/adrienbesnard"
