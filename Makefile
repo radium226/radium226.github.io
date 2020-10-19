@@ -49,11 +49,10 @@ deploy: generate
 
 .PHONY: clean
 ## Clean all the stuff
-clean: 
+clean:  clean-articles
 	rm -Rf "public"
 	rm -Rf "themes/devise"
 	rm -Rf "static/favicon.ico"
-	rm -Rf "posts/posgresql-changes.md"
 	rm -Rf "repos"
 
 .PHONY: serve

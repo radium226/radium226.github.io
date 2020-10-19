@@ -1,0 +1,35 @@
+2020.10.18 12:03:16 INFO  started: Metals version 0.9.4 in workspace '/home/adrien/Life/Projects/radium226.github.io' for client vscode.
+2020.10.18 12:03:21 INFO  time: initialize in 4.57s
+2020.10.18 12:03:23 WARN  no build tool detected in workspace '/home/adrien/Life/Projects/radium226.github.io'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
+2020.10.18 12:04:03 INFO  shutting down Metals
+2020.10.18 12:04:20 INFO  started: Metals version 0.9.4 in workspace '/home/adrien/Life/Projects/radium226.github.io' for client vscode.
+2020.10.18 12:04:25 INFO  time: initialize in 5.16s
+2020.10.18 21:21:50 INFO  no build target: using presentation compiler with only scala-library
+2020.10.18 21:21:50 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/Capture.scala
+2020.10.18 21:22:40 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/protocol/Submessage.scala
+2020.10.18 21:22:44 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/protocol/Value.scala
+2020.10.18 21:22:48 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/protocol/TupleData.scala
+2020.10.18 21:22:50 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/protocol/package.scala
+2020.10.18 21:22:50 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/protocol/Message.scala
+2020.10.18 21:29:37 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/protocol/codec/package.scala
+2020.10.18 21:32:38 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/Capture.scala
+2020.10.18 21:48:23 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/Change.scala
+2020.10.18 21:48:35 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/example/Main.scala
+something's wrong: no file:///home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/example/Main.scala in List[String]RangePosition(file:///home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/example/Main.scala, 338, 338, 350)
+2020.10.18 21:53:58 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/Change.scala
+2020.10.18 21:54:13 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/Capture.scala
+2020.10.18 22:01:17 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/reader/all.scala
+2020.10.18 22:01:18 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/reader/value.scala
+2020.10.18 22:01:38 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/Capture.scala
+2020.10.18 22:01:43 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/reader/all.scala
+2020.10.18 22:01:45 WARN  code navigation does not work for the file '/home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/reader/all.scala' because it doesn't belong to a build target.
+2020.10.18 22:01:45 WARN  code navigation does not work for the file '/home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/reader/all.scala' because it doesn't belong to a build target.
+2020.10.18 22:01:45 WARN  code navigation does not work for the file '/home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/reader/all.scala' because it doesn't belong to a build target.
+2020.10.18 22:01:49 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/reader/tupleData.scala
+2020.10.18 22:06:28 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/Capture.scala
+2020.10.18 22:18:10 WARN  code navigation does not work for the file '/home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/Capture.scala' because it doesn't belong to a build target.
+2020.10.18 22:18:10 WARN  code navigation does not work for the file '/home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/Capture.scala' because it doesn't belong to a build target.
+2020.10.18 22:28:55 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/protocol/TupleData.scala
+2020.10.18 22:28:59 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/reader/tupleData.scala
+2020.10.18 22:30:37 WARN  no build target for: /home/adrien/Life/Projects/postgresql-changes-scala/src/main/scala/radium226/changes/pgoutput/Capture.scala
+2020.10.18 22:52:10 INFO  shutting down Metals
