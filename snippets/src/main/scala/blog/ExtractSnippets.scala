@@ -6,33 +6,42 @@ import file.FileAlgebra
 import snippet.SnippetAlgebra
 import source.SourceAlgebra
 
-import instances._
-
 import cats.effect._
 
 
 object ExtractSnippets extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
-    implicit val fileAlgebra = FileAlgebra[IO]
-    implicit val sourceAlgebra = SourceAlgebra[IO]
-    implicit val snippetAlgebra = SnippetAlgebra[IO]
+    (for {
+      fileAlgebra <- FileAlgebra.resource[IO]
+      sourceAlgebra <- SourceAlgebra.resource[IO](fileAlgebra)
+      snippetAlgebra <- SnippetAlgebra.resource[IO](fileAlgebra)
+    } yield (fileAlgebra, sourceAlgebra, snippetAlgebra)).use({ case (fileAlgebra, sourceAlgebra, snippetAlgebra) =>
+      for {
+        snippets <- fileAlgebra
+          .listFiles(Paths.get("."))
+          .evalTap({ filePath =>
+            IO(println(s"filePath=${filePath}"))
+          })
+          .through(sourceAlgebra.sourceFilesOnly)
+          .through(snippetAlgebra.extractSnippets)
+          .evalTap({ snippet =>
+            IO(println(s"snippet=${snippet}"))
+          })
+          .compile
+          .toList
 
-    for {
-      snippets <- fileAlgebra
-        .listFiles(Paths.get(""))
-        .through(SourceAlgebra[IO].keepSourceFile)
-        .through(SnippetAlgebra[IO].extractSnippets)
-        .compile
-        .toList
+        _ = println(snippets)
 
-      _ <- fileAlgebra
-        .listFiles(Paths.get(""))
-        .through(SourceAlgebra[IO].keepSourceFile)
-        .through(SnippetAlgebra[IO].replaceSnippets(snippets))
-        .compile
-        .drain
-    } yield ExitCode.Success
+        _ <- fileAlgebra
+          .listFiles(Paths.get("."))
+          .through(sourceAlgebra.sourceFilesOnly)
+          .through(snippetAlgebra.replaceSnippets(snippets))
+          .compile
+          .drain
+      } yield ExitCode.Success
+
+    })
   }
 
 }

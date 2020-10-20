@@ -1,13 +1,17 @@
 package blog
 package file
 
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
+import java.util.stream.Collectors
 
-import cats.effect.{Blocker, ContextShift, Sync}
+import cats.effect.{Blocker, ContextShift, Resource, Sync}
 import fs2.Stream
 import fs2.io.file
 import fs2.text
 
+import scala.jdk.CollectionConverters._
+
+import cats.implicits._
 
 trait FileAlgebra[F[_]] {
 
@@ -17,30 +21,34 @@ trait FileAlgebra[F[_]] {
 
   def mimeType(filePath: Path): F[MimeType]
 
-  def fileContent(filePath: Path)(blocker: Blocker): Stream[F, String]
+  def fileContent(filePath: Path): Stream[F, String]
 
 }
 
 object FileAlgebra {
 
-  def apply[F[_]: FileAlgebra]: FileAlgebra[F] = implicitly
+  def resource[F[_]](implicit F: Sync[F], contextShift: ContextShift[F]): Resource[F, FileAlgebra[F]] = {
+    Blocker[F]
+      .map({ blocker =>
+        new FileAlgebra[F] {
 
-}
+          override def listFiles(folderPath: Path): Stream[F, Path] = {
+            Stream
+              .evals(F.delay(Files.list(folderPath).collect(Collectors.toList[Path]()).asScala.toList))
+              .evalFilter(fileOrFolderPath => F.delay(!Files.isDirectory(fileOrFolderPath)))
+          }
 
-trait FileAlgebraInstances {
+          override def mimeType(filePath: Path): F[MimeType] = F.pure("text/caca")
 
-  implicit def syncFileAlgebra[F[_]: Sync: ContextShift]: FileAlgebra[F] = new FileAlgebra[F] {
+          override def fileContent(filePath: Path): Stream[F, String] = {
+            file
+              .readAll[F](filePath, blocker, 1024)
+              .through(text.utf8Decode[F])
+              .through(text.lines[F])
+          }
+        }
+      })
 
-    override def listFiles(folderPath: Path): Stream[F, Path] = ???
-
-    override def mimeType(filePath: Path): F[MimeType] = F.pure("text/caca")
-
-    override def fileContent(filePath: Path)(blocker: Blocker): Stream[F, String] = {
-      file
-        .readAll[F](filePath, blocker, 1024)
-        .through(text.utf8Decode[F])
-        .through(text.lines[F])
-    }
   }
 
 }

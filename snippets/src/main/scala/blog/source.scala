@@ -4,42 +4,25 @@ package source
 import java.nio.file.Path
 
 import blog.file.FileAlgebra
-import cats.effect.Sync
+import cats.Applicative
+import cats.effect.{Resource, Sync}
 import fs2.Pipe
-
 import cats.implicits._
 import cats.effect.implicits._
 
 
 trait SourceAlgebra[F[_]] {
 
-  def keepSourceFile: Pipe[F, Path, Path]
+  def sourceFilesOnly: Pipe[F, Path, Path]
 
 }
 
 object SourceAlgebra {
 
-  def apply[F[_]: SourceAlgebra]: SourceAlgebra[F] = implicitly
+  def resource[F[_]: Applicative](fileAlgebra: FileAlgebra[F]): Resource[F, SourceAlgebra[F]] = Resource.pure[F, SourceAlgebra[F]](new SourceAlgebra[F] {
 
-}
+    override def sourceFilesOnly: Pipe[F, Path, Path] = { filePath => filePath }
 
-trait SourceAlgebraInstances {
-
-  implicit def syncSourceAlgebra[F[_]: Sync: FileAlgebra](implicit fileAlgebra: FileAlgebra[F]): SourceAlgebra[F] = new SourceAlgebra[F] {
-
-    override def keepSourceFile: Pipe[F, Path, Path] = { filePath =>
-      filePath
-        .evalFilter({ filePath =>
-          FileAlgebra[F]
-            .mimeType(filePath)
-            .map({ mimeType =>
-
-            })
-
-        })
-
-    }
-
-  }
+  })
 
 }
