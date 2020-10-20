@@ -35,3 +35,11 @@ site/static/favicon.ico:
 		"site/static/favicon.png" \
 		-define icon:auto-resize="64,48,32,16" \
 		"site/static/favicon.ico"
+
+.PHONY: site-clean
+## Clean everything related to the site
+site-clean: | articles-clean
+	rm -Rf "public"
+	rm -Rf "site/themes/devise"
+	rm -Rf "site/static/favicon.ico"
+	rm -Rf "repos"

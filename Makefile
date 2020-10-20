@@ -25,3 +25,6 @@ help:
 .PHONY: generate
 ## Generate everything
 generate: | site-generate
+
+.PHONY: clean
+clean: | site-clean snippets-clean
