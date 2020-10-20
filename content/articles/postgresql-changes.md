@@ -1,1 +1,0 @@
-../../../postgresql-changes-scala/article.md

@@ -1,0 +1,47 @@
+#!/usr/bin/env make
+
+SHELL = /usr/bin/env
+.SHELLFLAGS = bash -eu -c
+
+.ONESHELL:
+
+include make/git.mk make/articles.mk make/favicon.mk
+
+# Public 
+.PHONY: clone-public
+clone-public: public/.git/config
+
+public/.git/config:
+	mkdir -p "public"
+	git clone \
+		--single-branch \
+		--branch "public" \
+		$(shell git config --get "remote.origin.url") \
+		"public"
+
+# Theme
+.PHONY: clone-theme
+clone-theme: themes/devise/.git/config
+
+themes/devise/.git/config:
+	mkdir -p "themes/devise"
+	git clone \
+		--single-branch \
+		--branch "master" \
+		"https://github.com/austingebauer/devise" \
+		"themes/devise"
+	#make git-configure GIT_FOLDER="repos/postgresql-changes"
+
+
+
+.PHONY: clean
+## Clean all the stuff
+clean:  clean-articles
+	rm -Rf "public"
+	rm -Rf "themes/devise"
+	rm -Rf "static/favicon.ico"
+	rm -Rf "repos"
+
+.PHONY: serve
+serve: generate
+	hugo server
