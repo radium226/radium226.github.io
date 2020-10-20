@@ -20,7 +20,7 @@ lazy val fs2Dependency = for {
 lazy val root = (project in file("."))
   .settings(
     addCompilerPlugin(Dependencies.contextApplied),
-    name := "changes",
+    name := "snippets",
     // cats
     libraryDependencies ++= Dependencies.cats,
     // fs2
