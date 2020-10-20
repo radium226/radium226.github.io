@@ -20,7 +20,7 @@ site/themes/devise/.git/config:
 		--single-branch \
 		--branch "master" \
 		"https://github.com/austingebauer/devise" \
-		"themes/devise"
+		"site/themes/devise"
 
 public/.git/config:
 	mkdir -p "public"
@@ -43,3 +43,9 @@ site-clean: | articles-clean
 	rm -Rf "site/themes/devise"
 	rm -Rf "site/static/favicon.ico"
 	rm -Rf "repos"
+
+.PHONY: site-serve
+## Serve the site
+site-serve:
+	cd "site"
+	hugo serve

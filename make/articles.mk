@@ -1,6 +1,6 @@
 site/content/articles/postgresql-changes.md: repos/postgresql-changes/.git/config
 	git -C "repos/postgresql-changes" pull
-	cp "repos/postgresql-changes/article.md" "content/articles/postgresql-changes.md"
+	cp "repos/postgresql-changes/article.md" "site/content/articles/postgresql-changes.md"
 
 
 repos/postgresql-changes/.git/config:
@@ -11,9 +11,11 @@ repos/postgresql-changes/.git/config:
 
 
 .PHONY: articles-generate
+## Generate articles
 articles-generate: site/content/articles/postgresql-changes.md
 
 .PHONY: articles-clean
+## Clean articles
 articles-clean:
 	if [[ ! -L "site/content/articles/posgresql-changes.md" ]]; then
 		rm -Rf "site/content/articles/posgresql-changes.md"

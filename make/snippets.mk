@@ -1,8 +1,8 @@
 .PHONY: snippets
 snippets:
-	$(call say,Snippets! )
+	echo "snippets"
 
 
 .PHONY: snippets-clean
 snippets-clean:
-	echo "YAY!"
+	echo "snippets-clean"

@@ -6,7 +6,7 @@ SHELL = /usr/bin/env
 .ONESHELL:
 
 
-include make/logger.mk make/snippets.mk make/site.mk make/articles.mk
+include make/snippets.mk make/site.mk make/articles.mk
 
 
 .DEFAULT_GOAL :=
@@ -23,8 +23,9 @@ help:
 
 
 .PHONY: generate
-## Generate everything
+## Generate
 generate: | site-generate
 
 .PHONY: clean
+## Clean all files
 clean: | site-clean snippets-clean
