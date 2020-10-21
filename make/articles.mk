@@ -1,6 +1,9 @@
-site/content/articles/postgresql-changes.md: repos/postgresql-changes/.git/config
+site/content/articles/postgresql-changes.md: repos/postgresql-changes/.git/config $(INCLUDE_SNIPPETS)
 	git -C "repos/postgresql-changes" pull
-	cp "repos/postgresql-changes/article.md" "site/content/articles/postgresql-changes.md"
+	$(INCLUDE_SNIPPETS) \
+		-s "repos/postgresql-changes" \
+		"repos/postgresql-changes/article.md" \
+			>"site/content/articles/postgresql-changes.md"
 
 
 repos/postgresql-changes/.git/config:

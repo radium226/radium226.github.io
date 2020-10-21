@@ -1,0 +1,9 @@
+{
+  "resources":[
+    {"pattern":"\\Qforward.svg\\E"}, 
+    {"pattern":"\\Qindex.html\\E"}, 
+    {"pattern":"\\Qnext.svg\\E"}, 
+    {"pattern":"\\Qsimplelogger.properties\\E"}
+  ],
+  "bundles":[]
+}

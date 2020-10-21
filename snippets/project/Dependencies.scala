@@ -6,8 +6,6 @@ object Dependencies {
     "org.scalatest" %% "scalatest" % "3.1.3"
   )
 
-  lazy val scopt = Seq("com.github.scopt" %% "scopt" % "4.0.0-RC2")
-
   lazy val cats = Seq(
     "org.typelevel" %% "cats-core" % "2.1.1",
     "org.typelevel" %% "cats-effect" % "2.1.4",
@@ -24,20 +22,32 @@ object Dependencies {
     "eu.monniot" %% "fs2-process" % "0.3.0"
   )
 
+  lazy val chronicleQueue = Seq(
+    "net.openhft" % "chronicle-queue" % "5.20.4"
+  )
+
   lazy val contextApplied = "org.augustjune" %% "context-applied" % "0.1.4"
+
+  lazy val circe = Seq("circe-core", "circe-parser", "circe-generic").map({ name => "io.circe" %% name % "0.13.0" })
 
   lazy val shapeless = Seq(
     "com.chuusai" %% "shapeless" % "2.3.3"
   )
 
+  lazy val nuProcess = Seq(
+    "com.zaxxer" % "nuprocess" % "2.0.1"
+  )
+
+  lazy val selenium = Seq(
+    "org.seleniumhq.selenium" % "selenium-java" % "3.141.59"
+  )
+
+  lazy val http4s = Seq("http4s-core", "http4s-blaze-server", "http4s-dsl").map({ name => "org.http4s" %% name % "0.21.7" })
+
+  lazy val scopt = Seq("com.github.scopt" %% "scopt" % "4.0.0-RC2")
+
   lazy val logback = Seq("ch.qos.logback" % "logback-classic" % "1.2.3")
 
   lazy val slf4j = Seq("org.slf4j" % "slf4j-simple" % "1.7.30")
-
-  lazy val scodec = Seq(
-    "org.scodec" %% "scodec-core" % "1.11.7", 
-    "org.scodec" %% "scodec-bits" % "1.1.20",
-    "org.scodec" %% "scodec-stream" % "2.0.0"
-  )
 
 }

@@ -1,6 +1,6 @@
 ThisBuild / scalaVersion     := "2.13.3"
 ThisBuild / version          := "0.1.0-SNAPSHOT"
-ThisBuild / organization     := "radium226"
+ThisBuild / organization     := "com.github.radium226"
 ThisBuild / organizationName := "Radium226"
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation",
@@ -20,9 +20,7 @@ lazy val fs2Dependency = for {
 lazy val root = (project in file("."))
   .settings(
     addCompilerPlugin(Dependencies.contextApplied),
-    name := "snippets",
-    // scopt
-    libraryDependencies ++= Dependencies.scopt,
+    name := "include-snippets",
     // cats
     libraryDependencies ++= Dependencies.cats,
     // fs2
@@ -30,11 +28,44 @@ lazy val root = (project in file("."))
       fs2  <- Dependencies.fs2
       cats <- Dependencies.cats
     } yield fs2 exclude(cats.organization, cats.name)),
+    // scopt
+    libraryDependencies ++= Dependencies.scopt,
+    // logback
+    //libraryDependencies ++= Dependencies.logback,
     // scala-test
     libraryDependencies ++= Dependencies.scalaTest map { _ % Test },
+    // http4s
+    libraryDependencies ++= Dependencies.http4s,
     // slf4j
     libraryDependencies ++= Dependencies.slf4j,
-    // scodec
-    libraryDependencies ++= Dependencies.scodec,
-    Compile / mainClass := Some("radium226.changes.example.Main"),
+
+    libraryDependencies += "org.scalameta" %% "svm-subs" % "20.2.0",
+
+    Compile / mainClass := Some("blog.IncludeSnippets"),
+
+    /*assembly / mainClass := Some("pr0n.Main"),
+    assembly / assemblyJarName := "pr0n.jar",*/
+
+    graalVMNativeImageCommand := "/usr/lib/jvm/java-11-graalvm/bin/native-image",
+    graalVMNativeImageOptions := List(
+      "-H:+ReportUnsupportedElementsAtRuntime",
+      "--initialize-at-build-time",
+      "--no-fallback",
+      "--allow-incomplete-classpath",
+      "-H:+AddAllCharsets",
+      "-H:ResourceConfigurationFiles=../../src/main/graal/resource-config.json",
+      "-H:ReflectionConfigurationFiles=../../src/main/graal/reflect-config.json",
+      "-H:DynamicProxyConfigurationFiles=../../src/main/graal/proxy-config.json",
+      "-H:JNIConfigurationFiles=../../src/main/graal/jni-config.json",
+      "-H:Log=registerResource"
+      /*"--no-fallback",
+      "-H:+ReportExceptionStackTraces",
+      "--initialize-at-build-time",
+      "-H:+AddAllCharsets",
+      "-H:+JNI",
+      "--no-fallback",
+      "--allow-incomplete-classpath",
+      "--report-unsupported-elements-at-runtime"*/
+    )
   )
+  .enablePlugins(GraalVMNativeImagePlugin)
