@@ -28,14 +28,19 @@ object SourceAlgebra {
         .evalMap({ filePath =>
           fileAlgebra
             .mimeType(filePath)
-            .map(_.map({ mimeType =>
-              (filePath, mimeType)
-            }))
+            .map({ mimeTypeOption =>
+              System.err.println(s"${filePath} is ${mimeTypeOption}")
+              mimeTypeOption.map({ mimeType =>
+                (filePath, mimeType)
+              })
+            })
         })
         .unNone
-        //.evalTap({ case (filePath, mimeType) => F.delay(println(s"${filePath} is ${mimeType}")) })
         .collect({
           case (filePath, MimeType("text", _)) =>
+            filePath
+
+          case (filePath, MimeType("application", "sql")) =>
             filePath
         })
     }
@@ -43,7 +48,7 @@ object SourceAlgebra {
     def excludeIgnoredFiles: Pipe[F, Path, Path] = { filePaths =>
       filePaths
         .evalMap({ filePath =>
-          F.delay(Seq("git", "check-ignore", "--no-index", "--quiet", s"${filePath}") !).map({ exitCode => (filePath, exitCode == 0) })
+          F.delay(Process(Seq("git", "check-ignore", "--no-index", "--quiet", s"${filePath.getFileName}"), filePath.getParent.toFile) !).map({ exitCode => (filePath, exitCode == 0) })
         })
         .collect({
           case (filePath, false) =>

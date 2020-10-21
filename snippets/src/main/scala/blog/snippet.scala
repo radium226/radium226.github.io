@@ -23,7 +23,15 @@ case class SnippetRef(snippet: Snippet, sourceFilePath: Path, lineNo: Long)
 
 object SnippetAlgebra {
 
-  def commentSyntaxFor(mimeType: MimeType): Option[CommentSyntax] = CommentSyntax("//", "//").some
+  val CommentSyntaxesByMimeType = Map(
+    MimeType("application", "sql")      -> CommentSyntax("--", "--"),
+    MimeType("text", "markdown") -> CommentSyntax("[//]: # ", "[//]: # "),
+    MimeType("text", "scala") -> CommentSyntax("//", "//"), 
+    MimeType("text", "java") -> CommentSyntax("//", "//"), 
+    MimeType("text", "makefile") -> CommentSyntax("#", "#")
+  )
+
+  def commentSyntaxFor(mimeType: MimeType): Option[CommentSyntax] = CommentSyntaxesByMimeType.get(mimeType)
 
   def resource[F[_]: Sync](fileAlgebra: FileAlgebra[F]): Resource[F, SnippetAlgebra[F]] = {
     Resource.pure[F, SnippetAlgebra[F]](new SnippetAlgebra[F] {
@@ -76,7 +84,7 @@ object SnippetAlgebra {
                 val linePattern = s"^${Pattern.quote(commentSyntax.end)}>>>".r
                 linePattern.findFirstMatchIn(line) match {
                   case Some(_) =>
-                    Pull.output1(Snippet(snippetName, sourceFilePath, snippetStartLineNo to snippetEndLineNo)) >> go(remainingLineAndNoStream, sourceFilePath, commentSyntax, none[(String, Long)])
+                    Pull.output1(Snippet(snippetName, sourceFilePath, (snippetStartLineNo + 1) to (snippetEndLineNo - 1))) >> go(remainingLineAndNoStream, sourceFilePath, commentSyntax, none[(String, Long)])
 
                   case None =>
                     go(remainingLineAndNoStream, sourceFilePath, commentSyntax, (snippetName, snippetStartLineNo).some)

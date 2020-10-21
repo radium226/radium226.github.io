@@ -36,32 +36,24 @@ Since v10, Postgres allow us to...
 Okay, let's get started! First, let's write 3 small `make` targets to run a PostgreSQL instance locally: 
 
 {{< highlight make >}}
+
 PGDATA := postgres
 
-## Initialize a PostgreSQL database cluster
+# https://github.com/postgres/postgres/blob/2b27273435392d1606f0ffc95d73a439a457f08e/src/backend/replication/pgoutput/pgoutput.c#L123
 $(PGDATA)/PG_VERSION:
 	initdb \
 		-D "$(PGDATA)" \
 		-A "trust" \
 		-U "postgres"
 
-## Start PostgreSQL database server
 .PHONY: pg-start
 pg-start: $(PGDATA)/PG_VERSION
 	postgres \
 		-D "$(PGDATA)" \
 		-c unix_socket_directories="$(PWD)" \
 		-c wal_level="logical" \
-		-c max_replication_slots=1 
+		-c max_replication_slots=1
 
-## Execute a SQL file
-.PHONY: pg-run
-pg-run:
-	psql \
-		-U "postgres" \
-		-h "localhost" \
-		-p 5432 \
-		-f "$(SQL_FILE)"
 {{< / highlight >}}
 
 A few words here: 
@@ -74,6 +66,7 @@ Using this, we can now start PostgreSQL by running `make pg-start` and executing
 We're going to create a `persons` and listen to its change. Quite easy: 
 
 {{< highlight sql >}}
+
 CREATE TABLE
     persons (
         id SERIAL PRIMARY KEY,
@@ -82,10 +75,8 @@ CREATE TABLE
         tags TEXT ARRAY
     );
 
-ALTER TABLE 
-    persons 
-REPLICA IDENTITY 
-    FULL;
+ALTER TABLE persons REPLICA IDENTITY FULL;
+
 {{< / highlight >}}
 
 See the `REPLICA IDENTITY` property? It control the [behavior of the Logical Replication](https://www.postgresql.org/docs/13/sql-altertable.html#SQL-CREATETABLE-REPLICA-IDENTITY) of the table and may be set with the following values:
@@ -155,10 +146,27 @@ We're going to do that in 3 steps:
 
 #### Retreiving the `...`'s output
 
-Using the `fs2-io` extension, it's actually quite easy. We first have to define a small `CaptureConfig` case class which will store all the config value required to connect to the running PostgreSQL instance (`user`, `host`, `port`, etc.). 
+We first have to define a small `CaptureConfig` case class which will store all the config value required to connect to the running PostgreSQL instance (`user`, `host`, `port`, etc.). 
 
 {{< highlight scala >}}
-def receive[F[_]: Sync: ContextShift](config: CaptureConfig): Stream[F, Byte] = {
+
+case class CaptureConfig(
+  user: String,
+  password: String,
+  database: String,
+  host: String,
+  port: Int,
+  slot: String,
+  publications: List[String]
+)
+
+{{< / highlight >}}
+
+And now, using the the `fs2-io` extension, it's actually quite easy to invoke the `pg_receiva` process and capture its output.
+
+{{< highlight scala >}}
+
+  def receive[F[_]: Sync: ContextShift](config: CaptureConfig): Stream[F, Byte] = {
     (for {
       blocker <- Stream.resource[F, Blocker](Blocker[F])
       process <- Stream.bracket[F, Process](F.delay({
@@ -183,6 +191,7 @@ def receive[F[_]: Sync: ContextShift](config: CaptureConfig): Stream[F, Byte] = 
       readInputStream(F.delay(process.getInputStream), 512, blocker)
     })
   }
+
 {{< / highlight >}}
 
 Not a lot of things to say, it's actually quite straighforward. 

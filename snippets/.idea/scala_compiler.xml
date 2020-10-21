@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ScalaCompilerConfiguration">
     <profile name="sbt 1" modules="snippets_5747" />
-    <profile name="sbt 2" modules="snippets">
+    <profile name="sbt 2" modules="include-snippets,snippets">
       <option name="deprecationWarnings" value="true" />
       <option name="uncheckedWarnings" value="true" />
       <option name="featureWarnings" value="true" />

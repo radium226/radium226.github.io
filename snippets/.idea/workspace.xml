@@ -15,17 +15,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1be2b367-b917-4969-988b-2d7c7a3a6465" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/modules/snippets-build.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/snippets-build.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/snippets.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules/snippets.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/../Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../make/articles.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../make/articles.mk" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../site/content/articles/postgresql-changes.md" beforeDir="false" afterPath="$PROJECT_DIR$/../site/content/articles/postgresql-changes.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/sbt__co_fs2_fs2_core_2_13_2_4_0_jar.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/sbt__co_fs2_fs2_io_2_13_2_4_0_jar.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/sbt__org_scodec_scodec_bits_2_13_1_1_20_jar.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/sbt__org_scodec_scodec_core_2_13_1_11_7_jar.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/libraries/sbt__org_scodec_scodec_stream_2_13_2_0_0_jar.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/snippets-build.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules/snippets.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/scala_compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/scala_compiler.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build.sbt" beforeDir="false" afterPath="$PROJECT_DIR$/build.sbt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/Dependencies.scala" beforeDir="false" afterPath="$PROJECT_DIR$/project/Dependencies.scala" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/target/scala-2.12/sbt-1.0/classes/Dependencies$.class" beforeDir="false" afterPath="$PROJECT_DIR$/project/target/scala-2.12/sbt-1.0/classes/Dependencies$.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/target/scala-2.12/sbt-1.0/classes/Dependencies.class" beforeDir="false" afterPath="$PROJECT_DIR$/project/target/scala-2.12/sbt-1.0/classes/Dependencies.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/target/scala-2.12/sbt-1.0/zinc/inc_compile_2.12.zip" beforeDir="false" afterPath="$PROJECT_DIR$/project/target/scala-2.12/sbt-1.0/zinc/inc_compile_2.12.zip" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/target/streams/compile/compileIncremental/_global/streams/out" beforeDir="false" afterPath="$PROJECT_DIR$/project/target/streams/compile/compileIncremental/_global/streams/out" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/project/target/streams/compile/copyResources/_global/streams/out" beforeDir="false" afterPath="$PROJECT_DIR$/project/target/streams/compile/copyResources/_global/streams/out" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/blog/ExtractSnippets.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/blog/IncludeSnippets.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/output/test.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/scala/blog/IncludeSnippets.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/blog/IncludeSnippets.scala" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/scala/blog/file.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/blog/file.scala" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/scala/blog/snippet.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/blog/snippet.scala" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/scala/blog/source.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/blog/source.scala" afterDir="false" />

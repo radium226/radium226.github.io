@@ -27,6 +27,7 @@ object IncludeSnippets extends IOApp {
       for {
         snippets <- fileAlgebra
           .listFiles(sourceFolderPath)
+          .evalTap({ sourceFilePath => F.delay(System.err.println(s"sourceFilePath=${sourceFilePath}")) })
           .through(sourceAlgebra.sourceFilesOnly)
           .through(snippetAlgebra.parseSnippets)
           .compile

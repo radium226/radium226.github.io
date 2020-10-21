@@ -29,3 +29,6 @@ generate: | site-generate
 .PHONY: clean
 ## Clean all files
 clean: | site-clean snippets-clean
+
+.PHONY: try
+try: | snippets-clean generate site-serve

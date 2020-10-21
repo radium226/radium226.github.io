@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../../blog/snippets/.idea/modules/snippets.iml" filepath="$PROJECT_DIR$/../../blog/snippets/.idea/modules/snippets.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../../blog/snippets/.idea/modules/snippets-build.iml" filepath="$PROJECT_DIR$/../../blog/snippets/.idea/modules/snippets-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../blog/snippets/.idea/modules/include-snippets.iml" filepath="$PROJECT_DIR$/../../blog/snippets/.idea/modules/include-snippets.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../blog/snippets/.idea/modules/include-snippets-build.iml" filepath="$PROJECT_DIR$/../../blog/snippets/.idea/modules/include-snippets-build.iml" />
     </modules>
   </component>
 </project>

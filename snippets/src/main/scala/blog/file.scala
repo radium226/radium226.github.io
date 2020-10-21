@@ -50,21 +50,32 @@ object FileAlgebra {
           override def listFiles(folderPath: Path): Stream[F, Path] = {
             Stream
               .evals(F.delay(Files.walk(folderPath).collect(Collectors.toList[Path]()).asScala.toList))
-              .evalFilter(fileOrFolderPath => F.delay(!Files.isDirectory(fileOrFolderPath)))
-              /*.map({ filePath =>
-                folderPath.relativize(filePath)
-              })*/
+              .evalFilter({ fileOrFolderPath =>
+                F.delay(!Files.isDirectory(fileOrFolderPath))
+              })
           }
 
           override def mimeType(filePath: Path): F[Option[MimeType]] = {
             blocker
-              .delay(Files.probeContentType(filePath))
-              .map({ mimeTypeAsString =>
+              .delay(Option(Files.probeContentType(filePath)))
+              .map(_.flatMap({ mimeTypeAsString =>
                 MimeType.parse(mimeTypeAsString)
-              })
-              .recover({ _ =>
-                none[MimeType]
-              })
+              }).orElse(filePath.getFileName.toString match {
+                case fileName if fileName.endsWith(".mk") || fileName == "Makefile" =>
+                  MimeType("text", "makefile").some
+
+                case fileName if fileName.endsWith(".scala") =>
+                  MimeType("text", "scala").some
+
+                case fileName if fileName.endsWith(".java") =>
+                  MimeType("text", "java").some
+
+                case fileName if fileName.endsWith(".sbt") =>
+                  MimeType("text", "sbt").some
+
+                case _ =>
+                  none[MimeType]
+              }))
           }
 
           override def readFile(filePath: Path): Stream[F, String] = {
