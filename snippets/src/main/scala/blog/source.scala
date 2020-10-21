@@ -43,7 +43,7 @@ object SourceAlgebra {
     def excludeIgnoredFiles: Pipe[F, Path, Path] = { filePaths =>
       filePaths
         .evalMap({ filePath =>
-          F.delay(Seq("git", "check-ignore", s"${filePath}") !).map({ exitCode => (filePath, exitCode == 0) })
+          F.delay(Seq("git", "check-ignore", "--no-index", "--quiet", s"${filePath}") !).map({ exitCode => (filePath, exitCode == 0) })
         })
         .collect({
           case (filePath, false) =>
@@ -56,7 +56,6 @@ object SourceAlgebra {
       filePaths
         .through(includeTextFiles)
         .through(excludeIgnoredFiles)
-
     }
 
   })

@@ -7,6 +7,7 @@ import java.util.regex.Pattern
 import blog.file.{FileAlgebra, MimeType}
 import fs2._
 import cats._
+import cats.data.OptionT
 import cats.effect._
 
 import scala.collection.immutable.NumericRange
@@ -102,47 +103,49 @@ object SnippetAlgebra {
 
       }
 
-      override def includeSnippets(inputFolderPath: Path, outputFolderPath: Path): Pipe[F, SnippetRef, Unit] = { snippetRefs =>
-        snippetRefs
-          .flatMap({ snippetRef =>
-            fileAlgebra
-              .readFile(snippetRef.sourceFilePath)
-              .zipWithIndex
-              .flatMap({
-                case (_, lineNo) if lineNo == snippetRef.lineNo =>
-                  readSnippet(snippetRef.snippet)
-                case (line, _) =>
-                  Stream.emit(line)
-              })
-              .through(fileAlgebra.writeFile(outputFolderPath.resolve("test.md")))
+      override def includeSnippets(sourceFilePath: Path, snippetRefs: List[SnippetRef]): Stream[F, String] = {
+        fileAlgebra
+          .readFile(sourceFilePath)
+          .zipWithIndex
+          .map({ case (line, lineNo) =>
+            (line, snippetRefs
+              .find({ snippetRef =>
+                snippetRef.lineNo == lineNo && sourceFilePath == snippetRef.sourceFilePath
+              }))
+          })
+          .flatMap({
+            case (_, Some(snippetRef)) =>
+              readSnippet(snippetRef.snippet)
+
+            case (line, None) =>
+              Stream.emit(line)
           })
       }
 
-      def parseSnippetRefs(snippets: List[Snippet]): Pipe[F, Path, SnippetRef] = { sourceFilePaths =>
-        val snippetsByName = snippets
-          .map({ snippet =>
-            (snippet.name, snippet)
-          })
-          .toMap
+      def parseSnippetRefs(sourceFilePath: Path, snippets: List[Snippet]): Stream[F, SnippetRef] = {
+        (for {
+          mimeType      <- OptionT(Stream.eval(fileAlgebra.mimeType(sourceFilePath)))
+          commentSyntax <- OptionT(Stream.emit(commentSyntaxFor(mimeType)).covary[F])
+          linePattern    = s"^${Pattern.quote(commentSyntax.begin)}<<< ([a-z0-9-]+) >>>".r("snippetName")
+          snippetsByName = snippets
+            .map({ snippet =>
+              (snippet.name, snippet)
+            })
+            .toMap
 
-        sourceFilePaths
-          .through(lookUpCommentSyntax)
-          .flatMap({ case (sourceFilePath, commentSyntax) =>
-            val linePattern = s"^${Pattern.quote(commentSyntax.begin)}<<< ([a-z0-9-]+) >>>".r("snippetName")
-
-            fileAlgebra
-              .readFile(sourceFilePath)
-              .zipWithIndex
-              .map({ case (line, lineNo) =>
-                for {
-                  lineMatch     <- linePattern.findFirstMatchIn(line)
-                  snippetName = lineMatch.group("snippetName")
-                  snippet       <- snippetsByName.get(snippetName)
-                } yield SnippetRef(snippet, sourceFilePath, lineNo)
-              })
-              .unNone
-
-          })
+          snippetRef    <- OptionT(fileAlgebra
+            .readFile(sourceFilePath)
+            .zipWithIndex
+            .map({ case (line, lineNo) =>
+              for {
+                lineMatch     <- linePattern.findFirstMatchIn(line)
+                snippetName = lineMatch.group("snippetName")
+                snippet       <- snippetsByName.get(snippetName)
+              } yield SnippetRef(snippet, sourceFilePath, lineNo)
+            }))
+        } yield snippetRef)
+          .value
+          .unNone
       }
 
       def readSnippet(snippet: Snippet): Stream[F, String] = {
@@ -164,9 +167,9 @@ trait SnippetAlgebra[F[_]] {
 
   def parseSnippets: Pipe[F, Path, Snippet]
 
-  def parseSnippetRefs(snippets: List[Snippet]): Pipe[F, Path, SnippetRef]
+  def parseSnippetRefs(sourceFilePath: Path, snippets: List[Snippet]): Stream[F, SnippetRef]
 
-  def includeSnippets(inputFolderPath: Path, outputFolderPath: Path): Pipe[F, SnippetRef, Unit]
+  def includeSnippets(sourceFilePath: Path, snippetRefs: List[SnippetRef]): Stream[F, String]
 
   def readSnippet(snippet: Snippet): Stream[F, String]
 

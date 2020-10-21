@@ -6,6 +6,8 @@ object Dependencies {
     "org.scalatest" %% "scalatest" % "3.1.3"
   )
 
+  lazy val scopt = Seq("com.github.scopt" %% "scopt" % "4.0.0-RC2")
+
   lazy val cats = Seq(
     "org.typelevel" %% "cats-core" % "2.1.1",
     "org.typelevel" %% "cats-effect" % "2.1.4",

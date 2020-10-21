@@ -21,6 +21,8 @@ lazy val root = (project in file("."))
   .settings(
     addCompilerPlugin(Dependencies.contextApplied),
     name := "snippets",
+    // scopt
+    libraryDependencies ++= Dependencies.scopt,
     // cats
     libraryDependencies ++= Dependencies.cats,
     // fs2

@@ -51,9 +51,9 @@ object FileAlgebra {
             Stream
               .evals(F.delay(Files.walk(folderPath).collect(Collectors.toList[Path]()).asScala.toList))
               .evalFilter(fileOrFolderPath => F.delay(!Files.isDirectory(fileOrFolderPath)))
-              .map({ filePath =>
+              /*.map({ filePath =>
                 folderPath.relativize(filePath)
-              })
+              })*/
           }
 
           override def mimeType(filePath: Path): F[Option[MimeType]] = {
