@@ -5,23 +5,38 @@ import java.nio.file.{Files, Path}
 import java.util.stream.Collectors
 
 import cats.effect.{Blocker, ContextShift, Resource, Sync}
-import fs2.Stream
+import fs2.{Pipe, Stream, text}
 import fs2.io.file
-import fs2.text
 
 import scala.jdk.CollectionConverters._
-
 import cats.implicits._
+import cats.effect.implicits._
+
+case class MimeType(`type`: String, subtype: String)
+
+object MimeType {
+
+  def parse(mimeTypeAsString: String): Option[MimeType] = {
+    val mimeTypeSegments = mimeTypeAsString.split("/")
+    if (mimeTypeSegments.length == 2) {
+       MimeType(mimeTypeSegments(0), mimeTypeSegments(1)).some
+    } else {
+      none[MimeType]
+    }
+  }
+
+}
+
 
 trait FileAlgebra[F[_]] {
 
-  type MimeType = String
-
   def listFiles(folderPath: Path): Stream[F, Path]
 
-  def mimeType(filePath: Path): F[MimeType]
+  def mimeType(filePath: Path): F[Option[MimeType]]
 
-  def fileContent(filePath: Path): Stream[F, String]
+  def readFile(filePath: Path): Stream[F, String]
+
+  def writeFile(filePath: Path): Pipe[F, String, Unit]
 
 }
 
@@ -34,17 +49,36 @@ object FileAlgebra {
 
           override def listFiles(folderPath: Path): Stream[F, Path] = {
             Stream
-              .evals(F.delay(Files.list(folderPath).collect(Collectors.toList[Path]()).asScala.toList))
+              .evals(F.delay(Files.walk(folderPath).collect(Collectors.toList[Path]()).asScala.toList))
               .evalFilter(fileOrFolderPath => F.delay(!Files.isDirectory(fileOrFolderPath)))
+              .map({ filePath =>
+                folderPath.relativize(filePath)
+              })
           }
 
-          override def mimeType(filePath: Path): F[MimeType] = F.pure("text/caca")
+          override def mimeType(filePath: Path): F[Option[MimeType]] = {
+            blocker
+              .delay(Files.probeContentType(filePath))
+              .map({ mimeTypeAsString =>
+                MimeType.parse(mimeTypeAsString)
+              })
+              .recover({ _ =>
+                none[MimeType]
+              })
+          }
 
-          override def fileContent(filePath: Path): Stream[F, String] = {
+          override def readFile(filePath: Path): Stream[F, String] = {
             file
               .readAll[F](filePath, blocker, 1024)
               .through(text.utf8Decode[F])
               .through(text.lines[F])
+          }
+
+          override def writeFile(filePath: Path): Pipe[F, String, Unit] = { lines =>
+            lines
+              .map({ line => s"${line}\n"})
+              .through(text.utf8Encode)
+              .through(file.writeAll(filePath, blocker))
           }
         }
       })

@@ -1,5 +1,0 @@
-[warn] scodec-core_2.13-1.11.7-javadoc.jar no longer exists at /home/adrien/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scodec/scodec-core_2.13/1.11.7/scodec-core_2.13-1.11.7-javadoc.jar
-[debug] not up to date. inChanged = false, force = false
-[debug] Updating ProjectRef(uri("file:/home/adrien/Life/Projects/radium226.github.io/snippets/"), "root")...
-[debug] Done updating ProjectRef(uri("file:/home/adrien/Life/Projects/radium226.github.io/snippets/"), "root")
-[warn] There may be incompatibilities among your library dependencies; run 'evicted' to see detailed eviction warnings.

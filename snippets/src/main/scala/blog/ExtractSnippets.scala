@@ -17,28 +17,30 @@ object ExtractSnippets extends IOApp {
       sourceAlgebra <- SourceAlgebra.resource[IO](fileAlgebra)
       snippetAlgebra <- SnippetAlgebra.resource[IO](fileAlgebra)
     } yield (fileAlgebra, sourceAlgebra, snippetAlgebra)).use({ case (fileAlgebra, sourceAlgebra, snippetAlgebra) =>
+      val inputFolderPath = Paths.get(".")
+      val outputFolderPath = Paths.get("output")
       for {
         snippets <- fileAlgebra
-          .listFiles(Paths.get("."))
+          .listFiles(inputFolderPath)
           .evalTap({ filePath =>
             IO(println(s"filePath=${filePath}"))
           })
           .through(sourceAlgebra.sourceFilesOnly)
-          .through(snippetAlgebra.extractSnippets)
+          .through(snippetAlgebra.parseSnippets)
           .evalTap({ snippet =>
             IO(println(s"snippet=${snippet}"))
           })
           .compile
           .toList
 
-        _ = println(snippets)
-
         _ <- fileAlgebra
-          .listFiles(Paths.get("."))
+          .listFiles(inputFolderPath)
           .through(sourceAlgebra.sourceFilesOnly)
-          .through(snippetAlgebra.replaceSnippets(snippets))
+          .through(snippetAlgebra.parseSnippetRefs(snippets))
+          //.through(snippetAlgebra.includeSnippets(inputFolderPath, outputFolderPath))
           .compile
           .drain
+
       } yield ExitCode.Success
 
     })
