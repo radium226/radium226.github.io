@@ -21,13 +21,53 @@ case class Snippet(name: String, sourceFilePath: Path, lineNoRange: NumericRange
 
 case class SnippetRef(snippet: Snippet, sourceFilePath: Path, lineNo: Long)
 
+sealed trait Indent {
+
+  def remove(line: String): String
+
+}
+
+object Indent {
+
+  case object Absent extends Indent {
+
+    override def remove(line: String): String = {
+      line
+    }
+
+  }
+
+  case class Present(level: Int, character: String) extends Indent {
+
+    override def remove(line: String): String = {
+      line.replaceFirst(s"^${Pattern.quote(character)}{${level}}", "")
+    }
+
+  }
+
+  def of(line: String): Indent = {
+    "^( *|\t*)".r("firstSpaces")
+      .findFirstMatchIn(line)
+      .map(_.group("firstSpaces"))
+      .map({
+        case firstSpaces if firstSpaces.length == 0 =>
+          Indent.Absent
+
+        case firstSpaces =>
+          Indent.Present(firstSpaces.length, s"${firstSpaces.head}")
+      })
+      .getOrElse(Indent.Absent)
+  }
+
+}
+
 object SnippetAlgebra {
 
   val CommentSyntaxesByMimeType = Map(
     MimeType("application", "sql")      -> CommentSyntax("--", "--"),
     MimeType("text", "markdown") -> CommentSyntax("[//]: # ", "[//]: # "),
-    MimeType("text", "scala") -> CommentSyntax("//", "//"), 
-    MimeType("text", "java") -> CommentSyntax("//", "//"), 
+    MimeType("text", "scala") -> CommentSyntax("//", "//"),
+    MimeType("text", "java") -> CommentSyntax("//", "//"),
     MimeType("text", "makefile") -> CommentSyntax("#", "#")
   )
 
@@ -123,11 +163,35 @@ object SnippetAlgebra {
           })
           .flatMap({
             case (_, Some(snippetRef)) =>
-              readSnippet(snippetRef.snippet)
+              readSnippet(snippetRef.snippet).through(removeIndent)
 
             case (line, None) =>
               Stream.emit(line)
           })
+      }
+
+      def removeIndent: Pipe[F, String, String] = { lineStream =>
+
+        def go(lineStream: Stream[F, String], indentOption: Option[Indent]): Pull[F, String, Unit] = {
+          lineStream.pull.uncons1.flatMap({
+            case Some((line, remainingLineStream)) =>
+              indentOption match {
+                case Some(indent) =>
+                  for {
+                    _ <- Pull.output1(indent.remove(line))
+                    _ <- go(remainingLineStream, indent.some)
+                  } yield ()
+
+                case None =>
+                  go(Stream.emit(line) ++ remainingLineStream, Indent.of(line).some)
+              }
+
+            case None =>
+              Pull.done
+          })
+        }
+
+        go(lineStream, none[Indent]).stream
       }
 
       def parseSnippetRefs(sourceFilePath: Path, snippets: List[Snippet]): Stream[F, SnippetRef] = {

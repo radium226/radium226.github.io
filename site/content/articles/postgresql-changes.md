@@ -25,6 +25,7 @@ In order to have a better understanding how everything works together, we're goi
 ### A little bit of theory, first...
 #### In general
 
+Coucou dd 
 
 
 #### Postgres specific
@@ -118,19 +119,179 @@ In order to
 
 ### Protocol decoding with the `scodec` library
 
-The protocol used by the logical replication is well defined [here](). We're going to use `scodec` in order to deserialize it and use it programmaticaly. First, we need to define all the classes in which we're going to map everything. 
+#### Model
 
-Basically, there is 5 kinds of messages that can be decoded that we're going to model with a `sealed trait Message`: 
-* `Begin()`
-* `Commit()`
-* `Insert()`
-* `Update()`
-* `Delete()`
+The protocol used by the logical replication is well defined [in the official PostgreSQL documentation](). As it is a binary protocol, we're going to use [the `scodec` library]() in order to decode it and allow us to use it programmaticaly. 
+
+First we need to define all the classes representing the binary data:
+
+{{< highlight sql >}}
+
+sealed trait Message
+
+object Message {
+
+    case class Begin(lsn: LogSequenceNumber, commitInstant: Instant, xid: TransactionID) extends Message
+
+    case class Commit(commitLSN: LogSequenceNumber, transactionEndLSN: LogSequenceNumber, commitTimestamp: Instant) extends Message
+
+    case class Insert(relationID: RelationID, tupleData: TupleData) extends Message
+
+    case class Update(relationID: RelationID, submessage: Submessage, newTupleData: TupleData) extends Message
+
+    case class Relation(id: RelationID, namespace: String, name: String, replicaIdentitySetting: Int, columns: List[Column]) extends Message
+
+}
+
+{{< / highlight >}}
+
+Let's ignore the `RelationID`, `LogSequenceNumber` types (as they actually are aliases for `Long` or `Int`) and focus on the `TupleData` one:
+
+{{< highlight sql >}}
+
+[//]: # <<< tuple-data-class-definition >>>
+
+sealed trait Value
+
+object Value {
+
+    case object Null extends Value
+
+    case class Text(value: ByteVector) extends Value
+
+    case object Toasted extends Value
+
+}
+
+{{< / highlight >}}
+
+It's in the `Value` type where the data lies: 
+* The `Null` case object obviousely represents SQL's `NULL`; 
+* `Toasted` is for [large columns](https://blog.gojekengineering.com/a-toast-from-postgresql-83b83d0d0683); 
+* Finally, `Text` contains an actual value serialized in a textual form.
+
+#### Codec
+
+Our model classes are ready, so now we need to find a way to parse the binary data coming from `pg_receival` to an actual `Message` instance. Using `scodec`, we do that by defining a `Codec[Message]` this way:
+
+{{< highlight scala >}}
+
+[//]: # <<< message-codec >>>
+
+{{< / highlight >}}
+
+You see that we find back the kind of messages defined above. Note that `begin` is also a `Codec`:
+
+{{< highlight scala >}}
+
+val begin: Codec[Message.Begin] = {
+    ("lsn" | int64) ::
+    ("commitInstant" | timestamp) :: 
+    ("xid" | int32)  
+}.as[Message.Begin]
+
+{{< / highlight >}}
+
+
 
 
 ### Mapping using the `TupleDataReader` class and the `shapeless` library
 
-We're able to obtain all kind of `Message`s that are emitted by PostgreSQL. But what about converting them to actual case classes?
+#### Quick break
+
+Okay! Let's do a quick summary of what we've done so far:
+* We configured PostgreSQL to let it emit changes through its Logical Replication capability;
+* We receive the changes by directly invoking the `pg_recvlogical` binary and capturing its binary output;
+* We decoded the binary output to `Message` instances by using the appropriate `scodec`'s `Codec` instance;
+* In the `Message.Insert` or `Message.Update` classes, we have access to the actual values of the row through the `TupleData` type which is actually a `List` of `Value`s;
+* Among others, a `Value` may be a `Value.Text` containing bytes which represent the actual value stored in PostgreSQL.  
+
+So what's remaining now is: how to convert a `Message.Inserted` instance to a custom case class that will the inserted row?
+
+#### The `ValueReader` typeclass
+
+First, we're going to define a `ValueReader[T]` typeclass which will have the role of trying to convert a `Value` to a `T`. 
+
+Technically speaking, it's a `trait` with a single `read` method that we'll have to call to do the conversion: 
+
+{{< highlight scala >}}
+
+[//]: # <<< value-reader-trait >>>
+
+{{< / highlight >}}
+
+As we said that `ValueReader[T]` is a typeclass, it requires some instances to work with. For our little project here, we're only going to be able to read `String`, `Long` and `Int`. 
+
+Creating a `ValueReader[String]` is quite straighforward: 
+
+{{< highlight scala >}}
+
+[//]: # <<< value-reader-for-string-instance >>>
+
+{{< / highlight >}}
+
+A `ValueReader[Double]` is not that much complicated:
+
+{{< highlight scala >}}
+
+[//]: # <<< value-reader-for-double-instance >>>
+
+{{< / highlight >}}
+
+Using the `ValueReader[T]` typeclass allow us to map a `Value` of a `TupleData` to a `T`, but it doesn't allow us to map an entire `TupleData` to something else.
+
+#### The `TupleDataReader` typeclass
+
+We're going to use the exact same strategy as above: we define a `TupleDataReader[T]` with a single `read` method which will take a `TupleData` instance and return an instance of `T`.  
+
+{{< highlight scala >}}
+
+[//]: # <<< tuple-data-reader-trait >>>
+
+{{< / highlight >}}
+
+Again, as it's a typeclass, it require some instances. 
+
+So for example, if we have a `Person` case class defined like this:
+
+{{< highlight scala >}}
+
+[//]: # <<< person-class >>>
+
+{{< / highlight >}}
+
+We can have a `TupleDataReader[Person]` instance like this:
+
+{{< highlight scala >}}
+
+[//]: # <<< tuple-data-reader-for-person-instance >>>
+
+{{< / highlight >}}
+
+But... Think about it: it's a shame that, for all the case classes, we have to define a `TupleDataReader` instance! If we know in advance the case class, is there a way to derive this instance automatically?
+
+
+#### The `shapeless` library to the rescue! 
+
+I think you already heard about the `shapeless` library. It allow a lot of stuff, but we'll focus on the HNil one. 
+
+Thanks to Shapeless, we can express a complex type as a heterogeneous list of types. So, _in terms of types_, the following `HPerson` type and `Person` case class are semanticaly equivalent:
+
+{{< highlight scala >}}
+
+type HPerson = String :: String :: HNil
+
+case class Person(firstName: String, lastName: String)
+
+{{< / highlight >}}
+
+The real power of `shapeless` is that it provide a bijection between the case classes world and the hetereogeneous list of types world by using the `Generic[T]` and its `from` and `to` method. 
+
+You may ask: "What is the point of having an heterogeneous list of types when you have case classes?" And that's a good question! 
+
+The fact of working with lists allow you to take advantage of one of its intrinsec property: recursivity. 
+
+
 
 ### Embedding everything under an `fs2`'s `Pipe`s
 
@@ -166,31 +327,31 @@ And now, using the the `fs2-io` extension, it's actually quite easy to invoke th
 
 {{< highlight scala >}}
 
-  def receive[F[_]: Sync: ContextShift](config: CaptureConfig): Stream[F, Byte] = {
-    (for {
-      blocker <- Stream.resource[F, Blocker](Blocker[F])
-      process <- Stream.bracket[F, Process](F.delay({
-        new ProcessBuilder()
-          .command("pg_recvlogical",
-            "-d", s"${config.database}",
-            "-U", s"${config.user}",
-            "-h", s"${config.host}",
-            "-p", s"${config.port}",
-            s"--slot=${config.slot}",
-            "--file=-",
-            "--no-loop",
-            "--option=proto_version=1",
-            s"--option=publication_names=${config.publications.mkString(",")}",
-            "--plugin=pgoutput",
-            "--start")
-          .start()
-      }))({ process =>
-        F.delay(process.destroy())
-      })
-    } yield (blocker, process)).flatMap({ case (blocker, process) =>
-      readInputStream(F.delay(process.getInputStream), 512, blocker)
+def receive[F[_]: Sync: ContextShift](config: CaptureConfig): Stream[F, Byte] = {
+  (for {
+    blocker <- Stream.resource[F, Blocker](Blocker[F])
+    process <- Stream.bracket[F, Process](F.delay({
+      new ProcessBuilder()
+        .command("pg_recvlogical",
+          "-d", s"${config.database}",
+          "-U", s"${config.user}",
+          "-h", s"${config.host}",
+          "-p", s"${config.port}",
+          s"--slot=${config.slot}",
+          "--file=-",
+          "--no-loop",
+          "--option=proto_version=1",
+          s"--option=publication_names=${config.publications.mkString(",")}",
+          "--plugin=pgoutput",
+          "--start")
+        .start()
+    }))({ process =>
+      F.delay(process.destroy())
     })
-  }
+  } yield (blocker, process)).flatMap({ case (blocker, process) =>
+    readInputStream(F.delay(process.getInputStream), 512, blocker)
+  })
+}
 
 {{< / highlight >}}
 

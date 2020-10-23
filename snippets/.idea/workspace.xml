@@ -15,25 +15,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1be2b367-b917-4969-988b-2d7c7a3a6465" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/../Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../make/articles.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../make/articles.mk" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/project/better-monadic-for.sbt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../site/content/articles/postgresql-changes.md" beforeDir="false" afterPath="$PROJECT_DIR$/../site/content/articles/postgresql-changes.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/sbt__co_fs2_fs2_core_2_13_2_4_0_jar.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/sbt__co_fs2_fs2_io_2_13_2_4_0_jar.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/sbt__org_scodec_scodec_bits_2_13_1_1_20_jar.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/sbt__org_scodec_scodec_core_2_13_1_11_7_jar.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/sbt__org_scodec_scodec_stream_2_13_2_0_0_jar.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/snippets-build.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules/snippets.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/scala_compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/scala_compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.bsp/sbt.json" beforeDir="false" afterPath="$PROJECT_DIR$/.bsp/sbt.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/output/test.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/blog/IncludeSnippets.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/blog/IncludeSnippets.scala" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/blog/file.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/blog/file.scala" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/project/target/streams/_global/update/_global/streams/out" beforeDir="false" afterPath="$PROJECT_DIR$/project/target/streams/_global/update/_global/streams/out" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/scala/blog/snippet.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/blog/snippet.scala" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/scala/blog/source.scala" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/scala/blog/source.scala" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -132,10 +119,10 @@
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
     <state width="1850" height="258" key="GridCell.Tab.0.right/0.0.1920.1080@0.0.1920.1080" timestamp="1603282976648" />
-    <state x="654" y="276" width="611" height="536" key="find.popup" timestamp="1603276446256">
+    <state x="654" y="276" width="611" height="536" key="find.popup" timestamp="1603463491435">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state x="654" y="276" width="611" height="536" key="find.popup/0.0.1920.1080@0.0.1920.1080" timestamp="1603276446256" />
+    <state x="654" y="276" width="611" height="536" key="find.popup/0.0.1920.1080@0.0.1920.1080" timestamp="1603463491435" />
     <state x="622" y="244" key="run.anything.popup" timestamp="1603281928200">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
