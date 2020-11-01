@@ -6,7 +6,7 @@ date: 2020-10-16
 # How to make a quick'n'dirty CDC with PostgreSQL
 
 ## Overview
-At `${WORK}`, I encountered multiple times some technical architectures that rely on quite powerful tools that allow us to retreive all the changes that happened to a database: it's called a Change Data Capture. 
+At `${WORK}`, it's been several time that I encountered technical architectures that rely on quite powerful tools that emit all the events that happen to a Database. This tools belong to a category named Change Data Capture. 
 
 Among multiple usage, here are the three that I encountered : 
 * *Data Offload*: 
@@ -17,7 +17,12 @@ Multiple tools exists:
 
 
 ## What are we going to do?
-In order to have a better understanding how everything works together, we're going to build a small Debezium-like library which will listen to PostgreSQL changes in Scala, using `fs2` and `scodec` in a `cats`-friendly way. 
+
+I wanted to take some time to understand how exactly this kind of tools work. And what's better for that than building our own?
+
+Thus, we're going to build a small Scala library which will listen to PostgreSQL changes. 
+
+For that, we're going to rely on a few libraries: `fs2`, `scodec` and `shapeless`, and everything in a `cats`-friendly way. 
 
 
 ## But wait... How does it work?
@@ -33,7 +38,9 @@ Since v10, Postgres allow us to...
 
 
 ## Let's play with PostgreSQL
+
 ### Start a new Database Cluster
+
 Okay, let's get started! First, let's write 3 small `make` targets to run a PostgreSQL instance locally: 
 
 {{< highlight make >}}
@@ -61,69 +68,66 @@ A few words here:
 * In order to be able to use PostgreSQL's Logical Replication, we have to setup the `wal_level` to `logical` in order to let the database export and in our case here;
 * We're setting the `max_replication_slots` to `1` as there will be only one slot that is going to be used. 
 
-Using this, we can now start PostgreSQL by running `make pg-start` and executing a SQL file by running `make pg-run SQL_FILE=<...>` which is quite convenient.
+Using this, we can now start PostgreSQL by running `make pg-start. 
 
-### Create a replicated table
-We're going to create a `persons` and listen to its change. Quite easy: 
+### Create a table
+
+We're going to create a `persons` table and listen to its changes. Quite easy: 
 
 {{< highlight sql >}}
 
 CREATE TABLE
     persons (
         id SERIAL PRIMARY KEY,
-        firstName TEXT, 
-        lastName TEXT, 
-        tags TEXT ARRAY
+        first_name TEXT, 
+        last_name TEXT
     );
 
 ALTER TABLE persons REPLICA IDENTITY FULL;
 
 {{< / highlight >}}
 
-See the `REPLICA IDENTITY` property? It control the [behavior of the Logical Replication](https://www.postgresql.org/docs/13/sql-altertable.html#SQL-CREATETABLE-REPLICA-IDENTITY) of the table and may be set with the following values:
-* `DEFAULT` (which is obviously the default value...): on an `UPDATE`, in the _Old_ part of the change message, PostgreSQL will emit only the values composing the _Primary Key_; 
-* `USING INDEX <index_name>`: it's the same as above, except that it take the values listed in the `index_name` index definition; 
-* `FULL` (that we're using): the message will be compose by both the _old_ and the _new_ values of all the columns. 
+See the `REPLICA IDENTITY` property? It control the [behavior of the Logical Replication](https://www.postgresql.org/docs/13/sql-altertable.html#SQL-CREATETABLE-REPLICA-IDENTITY) of the table. By using the `FULL` value, we say to PostgreSQL that we want it to emit the old row enirely in case of `UPDATE` or `DELETE` statements.
 
 ### Insert some rows
-We're going to use a sample files (named `persons.txt`... Original, right?) to fill our table using this small loop: 
+We're going to use a sample files (named `persons.txt`... Original, right?) to fill our table using the `pg-populate-target`: 
 
 {{< highlight bash >}}
-while sleep 1; do
-		psql <<EOSQL \
-			-U "postgres" \
-			-h "localhost" \
-			-p 5432 \
-			-v last_name="'$$( shuf -n1 "persons.txt" | cut -d":" -f1 )'" \
-			-v first_name="'$$( shuf -n1 "persons.txt" | cut -d":" -f2  )'" \
-	INSERT INTO persons(firstName, lastName) VALUES (:last_name, :first_name)
-EOSQL
-done
-{{< / highlight >}}
 
-And let's wrap this into another small `make` target:
-{{< highlight make >}}
-.PHONY: pg-populate
-pg-populate: pg-
+[//]: # <<< pg-populate-target >>>
 
 {{< / highlight >}}
 
 ### Listen for changes
-Okay! Now we have a running PostgreSQL instance and a fake workload which produce data. We can now listen for the changes! 
+Okay! Now we have a running PostgreSQL instance and a fake workload which produce rows inside our `persons` table. We can now listen for the changes! For this, we can use the `pg_recvlogical` tool. 
 
-Great! We see that changes are publicated and we have a way to receive them... But how to use it in our program?
+{{< highlight bash >}}
 
-## Deserializing 
+[//]: # <<< pg-populate-target >>>
+
+{{< / highlight >}}
+
+Great! We see that changes in the `persons` table are publicated and we have a way to receive them using `pg_recvlogical` standard output. But it's a binary stream and we need to decode it in some way in order to use it programmatically. 
+
+
+## Decoding `pg_recvlogical` standard output 
+
+### Sample creation
+
+When you take a look at `pg_recvlogical`'s output, you can see that there for each change, there is a new line. This is actually false (as there is no such thing as a line abstraction in binary format), but we're going to ignore that for now
+
+
 ### The `CaptureSpec` abstract class
-In order to 
+
+
 
 ### Protocol decoding with the `scodec` library
 
-#### Model
+#### Model definition
 
-The protocol used by the logical replication is well defined [in the official PostgreSQL documentation](). As it is a binary protocol, we're going to use [the `scodec` library]() in order to decode it and allow us to use it programmaticaly. 
+The protocol used by the logical replication is well defined [in the official PostgreSQL documentation](https://www.postgresql.org/docs/10/protocol-logicalrep-message-formats.html). It's a binary protocol, so we're going to use [the `scodec` library]() to decode what's emitted by `pg_recvlogical`. 
 
-First we need to define all the classes representing the binary data:
+First we need to define all the classes representing the binary messages:
 
 {{< highlight sql >}}
 
@@ -139,7 +143,9 @@ object Message {
 
     case class Update(relationID: RelationID, submessage: Submessage, newTupleData: TupleData) extends Message
 
-    case class Relation(id: RelationID, namespace: String, name: String, replicaIdentitySetting: Int, columns: List[Column]) extends Message
+    case class Delete(relationId: RelationID, submessage: Submessage) extends Message
+
+    case class Relation(id: RelationID, namespace: RelationNamespace, name: RelationName, replicaIdentitySetting: Int, columns: List[Column]) extends Message
 
 }
 
@@ -165,14 +171,14 @@ object Value {
 
 {{< / highlight >}}
 
-It's in the `Value` type where the data lies: 
-* The `Null` case object obviousely represents SQL's `NULL`; 
-* `Toasted` is for [large columns](https://blog.gojekengineering.com/a-toast-from-postgresql-83b83d0d0683); 
-* Finally, `Text` contains an actual value serialized in a textual form.
+It's in the `Value` type where the value lies: 
+* The `Value.Null` case object represents SQL's `NULL` value; 
+* `Value.Toasted` is for [large columns](https://blog.gojekengineering.com/a-toast-from-postgresql-83b83d0d0683); 
+* Finally, `Value.Text` contains actual values (in bytes: the protocol does not express value types).
 
-#### Codec
+#### Codec implementation
 
-Our model classes are ready, so now we need to find a way to parse the binary data coming from `pg_receival` to an actual `Message` instance. Using `scodec`, we do that by defining a `Codec[Message]` this way:
+Our model classes are ready, so now we need to find a way to parse the binary messages coming from `pg_receival` to an actual `Message` instance. Using `scodec`, we do that by defining a `Codec`s this way:
 
 {{< highlight scala >}}
 
@@ -180,19 +186,17 @@ Our model classes are ready, so now we need to find a way to parse the binary da
 
 {{< / highlight >}}
 
-You see that we find back the kind of messages defined above. Note that `begin` is also a `Codec`:
+You see that for each kind of message, we have the corresponding `Codec`: for example, the `insert` variable is a `Codec[Message.Insert]` defined like this:
 
 {{< highlight scala >}}
 
-val begin: Codec[Message.Begin] = {
-    ("lsn" | int64) ::
-    ("commitInstant" | timestamp) :: 
-    ("xid" | int32)  
-}.as[Message.Begin]
+val insert: Codec[Message.Insert] = {
+    ("relationId" | int32) ::
+    constant('N') ::
+    ("newTupleData" | tupleData)
+}.as[Message.Insert]
 
 {{< / highlight >}}
-
-
 
 
 ### Mapping using the `TupleDataReader` class and the `shapeless` library
@@ -297,15 +301,15 @@ The fact of working with lists allow you to take advantage of one of its intrins
 
 #### Overview
 
-Now that we have all the classes that we have, we can embbed everything into a Stream[F[_], Change[T]] in order to build our Debezium-like library.
+Now that we have all the classes that we have, we can embbed everything into a `Stream[F[_], Change[T]]` in order to build our Debezium-like library.
 
 We're going to do that in 3 steps:
-* First, a Stream[F[_], Byte] which will invoke `...` and retreive the output
-* Then, a Pipe[F[_], Byte, Message] which will decode the `Byte` stream to an actual `Message` stream
-* And finally, a Pipe[F[_], Message, Change[T]] which will convert the `Message` stream to `Change[T]` using the `TupleDataReader` defined before. 
+* First, a `Stream[F[_], Byte]` which will invoke `...` and retreive the output
+* Then, a `Pipe[F[_], Byte, Message]` which will decode the `Byte` stream to an actual `Message` stream
+* And finally, a `Pipe[F[_], Message, Change[T]]` which will convert the `Message` stream to `Change[T]` using the `TupleDataReader` defined above. 
 
 
-#### Retreiving the `...`'s output
+#### Retreiving the `pg_recvlogical`'s output
 
 We first have to define a small `CaptureConfig` case class which will store all the config value required to connect to the running PostgreSQL instance (`user`, `host`, `port`, etc.). 
 
@@ -327,7 +331,7 @@ And now, using the the `fs2-io` extension, it's actually quite easy to invoke th
 
 {{< highlight scala >}}
 
-def receive[F[_]: Sync: ContextShift](config: CaptureConfig): Stream[F, Byte] = {
+def receive[F[_]: Sync: ContextShift: Concurrent](config: CaptureConfig): Stream[F, Byte] = {
   (for {
     blocker <- Stream.resource[F, Blocker](Blocker[F])
     process <- Stream.bracket[F, Process](F.delay({
@@ -338,11 +342,16 @@ def receive[F[_]: Sync: ContextShift](config: CaptureConfig): Stream[F, Byte] = 
           "-h", s"${config.host}",
           "-p", s"${config.port}",
           s"--slot=${config.slot}",
+          "--status-interval=1",
+          "--fsync-interval=1",
           "--file=-",
           "--no-loop",
+          "-v",
           "--option=proto_version=1",
           s"--option=publication_names=${config.publications.mkString(",")}",
           "--plugin=pgoutput",
+          "--create",
+          "--if-not-exists",
           "--start")
         .start()
     }))({ process =>
@@ -350,6 +359,7 @@ def receive[F[_]: Sync: ContextShift](config: CaptureConfig): Stream[F, Byte] = 
     })
   } yield (blocker, process)).flatMap({ case (blocker, process) =>
     readInputStream(F.delay(process.getInputStream), 512, blocker)
+      .concurrently(readInputStream(F.delay(process.getErrorStream), 512, blocker).through(text.utf8Decode).showLines(System.err))
   })
 }
 
@@ -358,85 +368,54 @@ def receive[F[_]: Sync: ContextShift](config: CaptureConfig): Stream[F, Byte] = 
 Not a lot of things to say, it's actually quite straighforward. 
 
 
-#### Toto
+#### From `Stream[F, Byte]`s to `Stream[F, Message]`
 
-Okay, this one is a little bit tricky. Until now, we concidered each messages one by one. 
+Okay, this one is a little bit tricky. Until now, we concidered each messages one by one. But `pg_recvlogical` is all the changes and the protocol does not define a single message size, and there is no separator to help us split a `Byte` stream to `Message` instances. 
 
-The strategy here is quite easy. We're going to try to read `Byte` chunks, and it may either:
-* Fail because there is not enough bytes, and in that case we're just going to read more bytes and try again
-* Succeed, which means retreiving both an instance of `Message` and remaning bytes (that'we going to reuse in the next iteration)
+To bypass that, we're going to try to read `Byte` chunks, and it may either:
+* Fail because there is not enough bytes, and in that case we're just going to read more bytes and try again;
+* Succeed, which means retreiving both:
+  * An instance of `Message` that we're going to emit,
+  * Some remaning bytes that'we going to reuse in the next iteration.
 
-In order to do that, we're going to switch from the push mode of `fs2` to the pull one, using the `pull` method which will make the things more readable. 
+In order to do that, we're going to switch from the push mode of `fs2` to the pull one and implement this algorithm using `Pull[F, Message, Unit]` and go back to `Stream[F, Message]` in the end. 
 
 {{< highlight scala >}}
-def messages[F[_]: RaiseThrowable]: Pipe[F, Byte, Message] = { stream =>
-  def go(leftStream: Stream[F, BitVector], leftBits: BitVector, first: Boolean): Pull[F, Message, Unit] = {
-    def moveOn() = leftStream.pull.uncons1.flatMap({
-      case Some((rightBits, rightStream)) =>
-        go(rightStream, leftBits ++ rightBits, first)
 
-      case None =>
-        Pull.done
-    })
+[//]: # <<< messages-method >>>
 
-    val bitsToDecode = leftBits.toByteVector.drop(if (first) 0 else 1).toBitVector
-    messageCodec.decode(bitsToDecode) match {
-      case Attempt.Successful(DecodeResult(message, remainingBits)) =>
-        Pull.output1[F, Message](message) *> go(leftStream, remainingBits, false)
-
-      case Attempt.Failure(InsufficientBits(_, _, _)) =>
-        moveOn()
-
-      case Attempt.Failure(General(message, _)) if GeneralMessagesToIgnore.exists(message.contains(_)) =>
-        moveOn()
-
-      case Attempt.Failure(cause) =>
-        Pull.raiseError[F](new Exception(s"${cause}"))
-    }
-  }
-
-  go(stream.chunks.map(_.toBitVector), BitVector.empty, true).stream
-}
 {{< / highlight >}}
 
 
-#### 
+#### From `Stream[F, Message]` to `Stream[F, Change[T]]`
 
-This one is actually easy: we're just going to keep the `Message.Insert`, `Message.Update` and `Message.Delete` extracting the relevent `TupleData` and read it using our `TupleDataReader`
+This one is actually easy: we're just going to keep the `Message.Insert`, `Message.Update` and `Message.Delete` extracting the relevent `TupleData` and read it as `T` the `TupleDataReader`
+
+But first, as we still need to distinguish inserts, updates or deletes, let's define the `Change[T]` sealed trait to hold the actual `T` instance:
 
 {{< highlight scala >}}
-def changes[F[_]: RaiseThrowable, T](implicit tupleDataReaderForT: TupleDataReader[T]): Pipe[F, Message, Change[T]] = { messages =>
-  messages
-    .flatMap({
-      case Message.Insert(_, newTupleData) =>
-        tupleDataReaderForT
-          .read(newTupleData)
-          .map({ newValue =>
-            Change.Insert(newValue)
-          })
-          .fold({ throwable =>
-            Stream.raiseError[F](throwable)
-          }, { insert =>
-            Stream.emit[F, Change[T]](insert)
-          })
 
-      case Message.Update(_, Submessage.Old(oldTupleData), newTupleData) =>
-        (for {
-          oldValue <- tupleDataReaderForT.read(oldTupleData)
-          newValue <- tupleDataReaderForT.read(newTupleData)
-        } yield Change.Update(oldValue, newValue))
-          .fold({ throwable =>
-            Stream.raiseError[F](throwable)
-          }, { update =>
-            Stream.emit[F, Change[T]](update)
-          })
+[//]: # <<< change-trait >>>
 
-      case Message.Update(_, _, _) =>
-        Stream.raiseError[F](new Exception("You should configure your table with REPLICAS FULL"))
-
-      case _ =>
-        Stream.empty[F]
-    })
-}
 {{< / highlight >}}
 
+Now, we can define the `Change.changes` method that which will rely on the `TupleDataReader`:
+
+{{< highlight scala >}}
+
+[//]: # <<< changes-method >>>
+
+{{< / highlight >}}
+
+
+#### Assemble everything
+
+Thanks to `fs2`'s expressiveness, it's actually straighforward:
+
+{{< highlight scala >}}
+
+[//]: # <<< capture-method >>>
+
+{{< / highlight >}}
+
+And that's it, we can now use our library with `Change.capture[`
