@@ -5,7 +5,7 @@ $(INCLUDE_SNIPPETS):
 	sbt --java-home "/usr/lib/jvm/java-11-graalvm" "show graalvm-native-image:packageBin"
 
 .PHONY: snippets
-snippets: snippets/target/graalvm-native-image/include-snippets
+snippets: $(INCLUDE_SNIPPETS)
 
 .PHONY: snippets-clean
 snippets-clean:
