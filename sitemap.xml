@@ -3,7 +3,12 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://radium226.github.io/posts/postgresql-changes/</loc>
+    <loc>https://radium226.github.io/articles/</loc>
+    <lastmod>2020-10-16T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://radium226.github.io/articles/postgresql-changes/</loc>
     <lastmod>2020-10-16T00:00:00+00:00</lastmod>
   </url>
   
@@ -13,12 +18,7 @@
   </url>
   
   <url>
-    <loc>https://radium226.github.io/posts/</loc>
-    <lastmod>2020-10-16T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://radium226.github.io/posts/hello/</loc>
+    <loc>https://radium226.github.io/articles/hello/</loc>
     <lastmod>2020-09-27T21:58:33+02:00</lastmod>
   </url>
   

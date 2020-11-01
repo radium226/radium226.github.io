@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en"><head>
+    <title>How to make a quick&#39;n&#39;dirty CDC with PostgreSQL</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="" />
+
+    
+    
+    
+    <link rel="stylesheet" href="../../css/theme.min.css">
+
+    
+    
+    
+
+    
+</head>
+<body>
+        <div id="content" class="mx-auto"><header class="container mt-sm-5 mt-4 mb-4 mt-xs-1">
+    <div class="row">
+        <div class="col-sm-4 col-12 text-sm-right text-center pt-sm-4">
+            <a href="../../" class="text-decoration-none">
+                <img id="home-image" class="rounded-circle"
+                    
+                        src="../../images/avatar.png"
+                    
+                />
+            </a>
+        </div>
+        <div class="col-sm-8 col-12 text-sm-left text-center">
+            <h2 class="m-0 mb-2 mt-4">
+                <a href="../../" class="text-decoration-none">
+                    
+                        ~adrien
+                    
+                </a>
+            </h2>
+            <p class="text-muted mb-1">
+                
+                    Tech stuff! 
+                
+            </p>
+            <ul id="nav-links" class="list-inline mb-2">
+                
+                
+                    <li class="list-inline-item">
+                        <a class="badge badge-white " href="../../" title="">Home</a>
+                    </li>
+                
+                    <li class="list-inline-item">
+                        <a class="badge badge-white " href="../../articles/" title="">Articles</a>
+                    </li>
+                
+            </ul>
+            <ul id="nav-social" class="list-inline">
+                
+                    <li class="list-inline-item mr-3">
+                        <a href="http://github.com/radium226" target="_blank">
+                            <i class="fab fa-github fa-1x text-muted"></i>
+                        </a>
+                    </li>
+                
+                    <li class="list-inline-item mr-3">
+                        <a href="https://fr.linkedin.com/public-profile/in/adrienbesnard" target="_blank">
+                            <i class="fab fa-linkedin-in fa-1x text-muted"></i>
+                        </a>
+                    </li>
+                
+            </ul>
+        </div>
+    </div>
+    <hr />
+</header>
+<div class="container">
+    <div class="pl-sm-4 ml-sm-5">
+        <h1 id="how-to-make-a-quickndirty-cdc-with-postgresql">How to make a quick&rsquo;n&rsquo;dirty CDC with PostgreSQL</h1>
+<h2 id="overview">Overview</h2>
+<p>At <code>${WORK}</code>, it&rsquo;s been several time that I encountered technical architectures that rely on quite powerful tools that emit all the events that happen to a Database. This tools belong to a category named Change Data Capture.</p>
+<p>Among multiple usage, here are the three that I encountered :</p>
+<ul>
+<li><em>Data Offload</em>:</li>
+<li><em>Outbox Pattern</em>:</li>
+</ul>
+<p>Multiple tools exists:</p>
+<ul>
+<li>Debezium (de facto)</li>
+</ul>
+<h2 id="what-are-we-going-to-do">What are we going to do?</h2>
+<p>I wanted to take some time to understand how exactly this kind of tools work. And what&rsquo;s better for that than building our own?</p>
+<p>Thus, we&rsquo;re going to build a small Scala library which will listen to PostgreSQL changes.</p>
+<p>For that, we&rsquo;re going to rely on a few libraries: <code>fs2</code>, <code>scodec</code> and <code>shapeless</code>, and everything in a <code>cats</code>-friendly way.</p>
+<h2 id="but-wait-how-does-it-work">But wait&hellip; How does it work?</h2>
+<h3 id="a-little-bit-of-theory-first">A little bit of theory, first&hellip;</h3>
+<h4 id="in-general">In general</h4>
+<p>Coucou dd</p>
+<h4 id="postgres-specific">Postgres specific</h4>
+<p>Since v10, Postgres allow us to&hellip;</p>
+<h2 id="lets-play-with-postgresql">Let&rsquo;s play with PostgreSQL</h2>
+<h3 id="start-a-new-database-cluster">Start a new Database Cluster</h3>
+<p>Okay, let&rsquo;s get started! First, let&rsquo;s write 3 small <code>make</code> targets to run a PostgreSQL instance locally:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-make" data-lang="make">PGDATA <span style="color:#f92672">:=</span> postgres
+
+<span style="color:#75715e"># https://github.com/postgres/postgres/blob/2b27273435392d1606f0ffc95d73a439a457f08e/src/backend/replication/pgoutput/pgoutput.c#L123
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">$(PGDATA)/PG_VERSION</span><span style="color:#f92672">:</span>
+	initdb <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>		-D <span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">$(</span>PGDATA<span style="color:#66d9ef">)</span><span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>		-A <span style="color:#e6db74">&#34;trust&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>		-U <span style="color:#e6db74">&#34;postgres&#34;</span>
+
+<span style="color:#a6e22e">.PHONY</span><span style="color:#f92672">:</span> pg-start
+<span style="color:#a6e22e">pg-start</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">$(</span>PGDATA<span style="color:#66d9ef">)</span>/PG_VERSION
+	postgres <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>		-D <span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">$(</span>PGDATA<span style="color:#66d9ef">)</span><span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>		-c unix_socket_directories<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">$(</span>PWD<span style="color:#66d9ef">)</span><span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>		-c wal_level<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;logical&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>		-c max_replication_slots<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>
+</code></pre></div>
+<p>A few words here:</p>
+<ul>
+<li>In order to be able to use PostgreSQL&rsquo;s Logical Replication, we have to setup the <code>wal_level</code> to <code>logical</code> in order to let the database export and in our case here;</li>
+<li>We&rsquo;re setting the <code>max_replication_slots</code> to <code>1</code> as there will be only one slot that is going to be used.</li>
+</ul>
+<p>Using this, we can now start PostgreSQL by running `make pg-start.</p>
+<h3 id="create-a-table">Create a table</h3>
+<p>We&rsquo;re going to create a <code>persons</code> table and listen to its changes. Quite easy:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">CREATE</span> <span style="color:#66d9ef">TABLE</span>
+    persons (
+        id SERIAL <span style="color:#66d9ef">PRIMARY</span> <span style="color:#66d9ef">KEY</span>,
+        first_name TEXT, 
+        last_name TEXT
+    );
+
+<span style="color:#66d9ef">ALTER</span> <span style="color:#66d9ef">TABLE</span> persons REPLICA <span style="color:#66d9ef">IDENTITY</span> <span style="color:#66d9ef">FULL</span>;</code></pre></div>
+<p>See the <code>REPLICA IDENTITY</code> property? It control the <a href="https://www.postgresql.org/docs/13/sql-altertable.html#SQL-CREATETABLE-REPLICA-IDENTITY">behavior of the Logical Replication</a> of the table. By using the <code>FULL</code> value, we say to PostgreSQL that we want it to emit the old row enirely in case of <code>UPDATE</code> or <code>DELETE</code> statements.</p>
+<h3 id="insert-some-rows">Insert some rows</h3>
+<p>We&rsquo;re going to use a sample files (named <code>persons.txt</code>&hellip; Original, right?) to fill our table using the <code>pg-populate-target</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#f92672">[</span>//<span style="color:#f92672">]</span>: <span style="color:#75715e"># &lt;&lt;&lt; pg-populate-target &gt;&gt;&gt;</span></code></pre></div>
+<h3 id="listen-for-changes">Listen for changes</h3>
+<p>Okay! Now we have a running PostgreSQL instance and a fake workload which produce rows inside our <code>persons</code> table. We can now listen for the changes! For this, we can use the <code>pg_recvlogical</code> tool.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#f92672">[</span>//<span style="color:#f92672">]</span>: <span style="color:#75715e"># &lt;&lt;&lt; pg-populate-target &gt;&gt;&gt;</span></code></pre></div>
+<p>Great! We see that changes in the <code>persons</code> table are publicated and we have a way to receive them using <code>pg_recvlogical</code> standard output. But it&rsquo;s a binary stream and we need to decode it in some way in order to use it programmatically.</p>
+<h2 id="decoding-pg_recvlogical-standard-output">Decoding <code>pg_recvlogical</code> standard output</h2>
+<h3 id="sample-creation">Sample creation</h3>
+<p>When you take a look at <code>pg_recvlogical</code>&rsquo;s output, you can see that there for each change, there is a new line. This is actually false (as there is no such thing as a line abstraction in binary format), but we&rsquo;re going to ignore that for now</p>
+<h3 id="the-capturespec-abstract-class">The <code>CaptureSpec</code> abstract class</h3>
+<h3 id="protocol-decoding-with-the-scodec-library">Protocol decoding with the <code>scodec</code> library</h3>
+<h4 id="model-definition">Model definition</h4>
+<p>The protocol used by the logical replication is well defined <a href="https://www.postgresql.org/docs/10/protocol-logicalrep-message-formats.html">in the official PostgreSQL documentation</a>. It&rsquo;s a binary protocol, so we&rsquo;re going to use <a href="">the <code>scodec</code> library</a> to decode what&rsquo;s emitted by <code>pg_recvlogical</code>.</p>
+<p>First we need to define all the classes representing the binary messages:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">sealed trait Message
+
+<span style="color:#66d9ef">object</span> Message <span style="color:#960050;background-color:#1e0010">{</span>
+
+    <span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#66d9ef">Begin</span>(lsn: LogSequenceNumber, commitInstant: Instant, xid: TransactionID) extends Message
+
+    <span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#66d9ef">Commit</span>(commitLSN: LogSequenceNumber, transactionEndLSN: LogSequenceNumber, commitTimestamp: Instant) extends Message
+
+    <span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#66d9ef">Insert</span>(relationID: RelationID, tupleData: TupleData) extends Message
+
+    <span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#66d9ef">Update</span>(relationID: RelationID, submessage: Submessage, newTupleData: TupleData) extends Message
+
+    <span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#66d9ef">Delete</span>(relationId: RelationID, submessage: Submessage) extends Message
+
+    <span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> Relation(id: RelationID, namespace: RelationNamespace, name: RelationName, replicaIdentitySetting: Int, columns: List[<span style="color:#66d9ef">Column</span>]) extends Message
+
+<span style="color:#960050;background-color:#1e0010">}</span></code></pre></div>
+<p>Let&rsquo;s ignore the <code>RelationID</code>, <code>LogSequenceNumber</code> types (as they actually are aliases for <code>Long</code> or <code>Int</code>) and focus on the <code>TupleData</code> one:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql">[<span style="color:#f92672">//</span>]: <span style="color:#f92672">#</span> <span style="color:#f92672">&lt;&lt;&lt;</span> tuple<span style="color:#f92672">-</span><span style="color:#66d9ef">data</span><span style="color:#f92672">-</span><span style="color:#66d9ef">class</span><span style="color:#f92672">-</span>definition <span style="color:#f92672">&gt;&gt;&gt;</span>
+
+sealed trait Value
+
+<span style="color:#66d9ef">object</span> Value <span style="color:#960050;background-color:#1e0010">{</span>
+
+    <span style="color:#66d9ef">case</span> <span style="color:#66d9ef">object</span> <span style="color:#66d9ef">Null</span> extends Value
+
+    <span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> Text(value: ByteVector) extends Value
+
+    <span style="color:#66d9ef">case</span> <span style="color:#66d9ef">object</span> Toasted extends Value
+
+<span style="color:#960050;background-color:#1e0010">}</span></code></pre></div>
+<p>It&rsquo;s in the <code>Value</code> type where the value lies:</p>
+<ul>
+<li>The <code>Value.Null</code> case object represents SQL&rsquo;s <code>NULL</code> value;</li>
+<li><code>Value.Toasted</code> is for <a href="https://blog.gojekengineering.com/a-toast-from-postgresql-83b83d0d0683">large columns</a>;</li>
+<li>Finally, <code>Value.Text</code> contains actual values (in bytes: the protocol does not express value types).</li>
+</ul>
+<h4 id="codec-implementation">Codec implementation</h4>
+<p>Our model classes are ready, so now we need to find a way to parse the binary messages coming from <code>pg_receival</code> to an actual <code>Message</code> instance. Using <code>scodec</code>, we do that by defining a <code>Codec</code>s this way:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">//</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">#</span> <span style="color:#66d9ef">&lt;&lt;&lt;</span> <span style="color:#66d9ef">message-codec</span> <span style="color:#66d9ef">&gt;&gt;&gt;</span></code></pre></div>
+<p>You see that for each kind of message, we have the corresponding <code>Codec</code>: for example, the <code>insert</code> variable is a <code>Codec[Message.Insert]</code> defined like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#66d9ef">val</span> insert<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Codec</span><span style="color:#f92672">[</span><span style="color:#66d9ef">Message.Insert</span><span style="color:#f92672">]</span> <span style="color:#66d9ef">=</span> <span style="color:#f92672">{</span>
+    <span style="color:#f92672">(</span><span style="color:#e6db74">&#34;relationId&#34;</span> <span style="color:#f92672">|</span> int32<span style="color:#f92672">)</span> <span style="color:#66d9ef">:</span><span style="color:#66d9ef">:</span>
+    constant<span style="color:#f92672">(</span><span style="color:#e6db74">&#39;N&#39;</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">:</span><span style="color:#66d9ef">:</span>
+    <span style="color:#f92672">(</span><span style="color:#e6db74">&#34;newTupleData&#34;</span> <span style="color:#f92672">|</span> tupleData<span style="color:#f92672">)</span>
+<span style="color:#f92672">}.</span>as<span style="color:#f92672">[</span><span style="color:#66d9ef">Message.Insert</span><span style="color:#f92672">]</span></code></pre></div>
+<h3 id="mapping-using-the-tupledatareader-class-and-the-shapeless-library">Mapping using the <code>TupleDataReader</code> class and the <code>shapeless</code> library</h3>
+<h4 id="quick-break">Quick break</h4>
+<p>Okay! Let&rsquo;s do a quick summary of what we&rsquo;ve done so far:</p>
+<ul>
+<li>We configured PostgreSQL to let it emit changes through its Logical Replication capability;</li>
+<li>We receive the changes by directly invoking the <code>pg_recvlogical</code> binary and capturing its binary output;</li>
+<li>We decoded the binary output to <code>Message</code> instances by using the appropriate <code>scodec</code>&rsquo;s <code>Codec</code> instance;</li>
+<li>In the <code>Message.Insert</code> or <code>Message.Update</code> classes, we have access to the actual values of the row through the <code>TupleData</code> type which is actually a <code>List</code> of <code>Value</code>s;</li>
+<li>Among others, a <code>Value</code> may be a <code>Value.Text</code> containing bytes which represent the actual value stored in PostgreSQL.</li>
+</ul>
+<p>So what&rsquo;s remaining now is: how to convert a <code>Message.Inserted</code> instance to a custom case class that will the inserted row?</p>
+<h4 id="the-valuereader-typeclass">The <code>ValueReader</code> typeclass</h4>
+<p>First, we&rsquo;re going to define a <code>ValueReader[T]</code> typeclass which will have the role of trying to convert a <code>Value</code> to a <code>T</code>.</p>
+<p>Technically speaking, it&rsquo;s a <code>trait</code> with a single <code>read</code> method that we&rsquo;ll have to call to do the conversion:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">//</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">#</span> <span style="color:#66d9ef">&lt;&lt;&lt;</span> <span style="color:#66d9ef">value-reader-trait</span> <span style="color:#66d9ef">&gt;&gt;&gt;</span></code></pre></div>
+<p>As we said that <code>ValueReader[T]</code> is a typeclass, it requires some instances to work with. For our little project here, we&rsquo;re only going to be able to read <code>String</code>, <code>Long</code> and <code>Int</code>.</p>
+<p>Creating a <code>ValueReader[String]</code> is quite straighforward:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">//</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">#</span> <span style="color:#66d9ef">&lt;&lt;&lt;</span> <span style="color:#66d9ef">value-reader-for-string-instance</span> <span style="color:#66d9ef">&gt;&gt;&gt;</span></code></pre></div>
+<p>A <code>ValueReader[Double]</code> is not that much complicated:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">//</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">#</span> <span style="color:#66d9ef">&lt;&lt;&lt;</span> <span style="color:#66d9ef">value-reader-for-double-instance</span> <span style="color:#66d9ef">&gt;&gt;&gt;</span></code></pre></div>
+<p>Using the <code>ValueReader[T]</code> typeclass allow us to map a <code>Value</code> of a <code>TupleData</code> to a <code>T</code>, but it doesn&rsquo;t allow us to map an entire <code>TupleData</code> to something else.</p>
+<h4 id="the-tupledatareader-typeclass">The <code>TupleDataReader</code> typeclass</h4>
+<p>We&rsquo;re going to use the exact same strategy as above: we define a <code>TupleDataReader[T]</code> with a single <code>read</code> method which will take a <code>TupleData</code> instance and return an instance of <code>T</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">//</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">#</span> <span style="color:#66d9ef">&lt;&lt;&lt;</span> <span style="color:#66d9ef">tuple-data-reader-trait</span> <span style="color:#66d9ef">&gt;&gt;&gt;</span></code></pre></div>
+<p>Again, as it&rsquo;s a typeclass, it require some instances.</p>
+<p>So for example, if we have a <code>Person</code> case class defined like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">//</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">#</span> <span style="color:#66d9ef">&lt;&lt;&lt;</span> <span style="color:#66d9ef">person-class</span> <span style="color:#66d9ef">&gt;&gt;&gt;</span></code></pre></div>
+<p>We can have a <code>TupleDataReader[Person]</code> instance like this:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">//</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">#</span> <span style="color:#66d9ef">&lt;&lt;&lt;</span> <span style="color:#66d9ef">tuple-data-reader-for-person-instance</span> <span style="color:#66d9ef">&gt;&gt;&gt;</span></code></pre></div>
+<p>But&hellip; Think about it: it&rsquo;s a shame that, for all the case classes, we have to define a <code>TupleDataReader</code> instance! If we know in advance the case class, is there a way to derive this instance automatically?</p>
+<h4 id="the-shapeless-library-to-the-rescue">The <code>shapeless</code> library to the rescue!</h4>
+<p>I think you already heard about the <code>shapeless</code> library. It allow a lot of stuff, but we&rsquo;ll focus on the HNil one.</p>
+<p>Thanks to Shapeless, we can express a complex type as a heterogeneous list of types. So, <em>in terms of types</em>, the following <code>HPerson</code> type and <code>Person</code> case class are semanticaly equivalent:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#66d9ef">type</span> <span style="color:#66d9ef">HPerson</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">String</span> <span style="color:#66d9ef">:</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span> <span style="color:#66d9ef">::</span> <span style="color:#66d9ef">HNil</span>
+
+<span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Person</span><span style="color:#f92672">(</span>firstName<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span><span style="color:#f92672">,</span> lastName<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span><span style="color:#f92672">)</span></code></pre></div>
+<p>The real power of <code>shapeless</code> is that it provide a bijection between the case classes world and the hetereogeneous list of types world by using the <code>Generic[T]</code> and its <code>from</code> and <code>to</code> method.</p>
+<p>You may ask: &ldquo;What is the point of having an heterogeneous list of types when you have case classes?&rdquo; And that&rsquo;s a good question!</p>
+<p>The fact of working with lists allow you to take advantage of one of its intrinsec property: recursivity.</p>
+<h3 id="embedding-everything-under-an-fs2s-pipes">Embedding everything under an <code>fs2</code>&rsquo;s <code>Pipe</code>s</h3>
+<h4 id="overview-1">Overview</h4>
+<p>Now that we have all the classes that we have, we can embbed everything into a <code>Stream[F[_], Change[T]]</code> in order to build our Debezium-like library.</p>
+<p>We&rsquo;re going to do that in 3 steps:</p>
+<ul>
+<li>First, a <code>Stream[F[_], Byte]</code> which will invoke <code>...</code> and retreive the output</li>
+<li>Then, a <code>Pipe[F[_], Byte, Message]</code> which will decode the <code>Byte</code> stream to an actual <code>Message</code> stream</li>
+<li>And finally, a <code>Pipe[F[_], Message, Change[T]]</code> which will convert the <code>Message</code> stream to <code>Change[T]</code> using the <code>TupleDataReader</code> defined above.</li>
+</ul>
+<h4 id="retreiving-the-pg_recvlogicals-output">Retreiving the <code>pg_recvlogical</code>&rsquo;s output</h4>
+<p>We first have to define a small <code>CaptureConfig</code> case class which will store all the config value required to connect to the running PostgreSQL instance (<code>user</code>, <code>host</code>, <code>port</code>, etc.).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#66d9ef">case</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">CaptureConfig</span><span style="color:#f92672">(</span>
+  user<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span><span style="color:#f92672">,</span>
+  password<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span><span style="color:#f92672">,</span>
+  database<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span><span style="color:#f92672">,</span>
+  host<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span><span style="color:#f92672">,</span>
+  port<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Int</span><span style="color:#f92672">,</span>
+  slot<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">String</span><span style="color:#f92672">,</span>
+  publications<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">List</span><span style="color:#f92672">[</span><span style="color:#66d9ef">String</span><span style="color:#f92672">]</span>
+<span style="color:#f92672">)</span></code></pre></div>
+<p>And now, using the the <code>fs2-io</code> extension, it&rsquo;s actually quite easy to invoke the <code>pg_receiva</code> process and capture its output.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#66d9ef">def</span> receive<span style="color:#f92672">[</span><span style="color:#66d9ef">F</span><span style="color:#f92672">[</span><span style="color:#66d9ef">_</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Sync:</span> <span style="color:#66d9ef">ContextShift:</span> <span style="color:#66d9ef">Concurrent</span><span style="color:#f92672">](</span>config<span style="color:#66d9ef">:</span> <span style="color:#66d9ef">CaptureConfig</span><span style="color:#f92672">)</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">Stream</span><span style="color:#f92672">[</span><span style="color:#66d9ef">F</span>, <span style="color:#66d9ef">Byte</span><span style="color:#f92672">]</span> <span style="color:#66d9ef">=</span> <span style="color:#f92672">{</span>
+  <span style="color:#f92672">(</span><span style="color:#66d9ef">for</span> <span style="color:#f92672">{</span>
+    blocker <span style="color:#66d9ef">&lt;-</span> <span style="color:#a6e22e">Stream</span><span style="color:#f92672">.</span>resource<span style="color:#f92672">[</span><span style="color:#66d9ef">F</span>, <span style="color:#66d9ef">Blocker</span><span style="color:#f92672">](</span><span style="color:#a6e22e">Blocker</span><span style="color:#f92672">[</span><span style="color:#66d9ef">F</span><span style="color:#f92672">])</span>
+    process <span style="color:#66d9ef">&lt;-</span> <span style="color:#a6e22e">Stream</span><span style="color:#f92672">.</span>bracket<span style="color:#f92672">[</span><span style="color:#66d9ef">F</span>, <span style="color:#66d9ef">Process</span><span style="color:#f92672">](</span>F<span style="color:#f92672">.</span>delay<span style="color:#f92672">({</span>
+      <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">ProcessBuilder</span><span style="color:#f92672">()</span>
+        <span style="color:#f92672">.</span>command<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;pg_recvlogical&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;-d&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">s&#34;</span><span style="color:#e6db74">${</span>config<span style="color:#f92672">.</span>database<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;-U&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">s&#34;</span><span style="color:#e6db74">${</span>config<span style="color:#f92672">.</span>user<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;-h&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">s&#34;</span><span style="color:#e6db74">${</span>config<span style="color:#f92672">.</span>host<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;-p&#34;</span><span style="color:#f92672">,</span> <span style="color:#e6db74">s&#34;</span><span style="color:#e6db74">${</span>config<span style="color:#f92672">.</span>port<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">s&#34;--slot=</span><span style="color:#e6db74">${</span>config<span style="color:#f92672">.</span>slot<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;--status-interval=1&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;--fsync-interval=1&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;--file=-&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;--no-loop&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;-v&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;--option=proto_version=1&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">s&#34;--option=publication_names=</span><span style="color:#e6db74">${</span>config<span style="color:#f92672">.</span>publications<span style="color:#f92672">.</span>mkString<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;,&#34;</span><span style="color:#f92672">)</span><span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;--plugin=pgoutput&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;--create&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;--if-not-exists&#34;</span><span style="color:#f92672">,</span>
+          <span style="color:#e6db74">&#34;--start&#34;</span><span style="color:#f92672">)</span>
+        <span style="color:#f92672">.</span>start<span style="color:#f92672">()</span>
+    <span style="color:#f92672">}))({</span> process <span style="color:#66d9ef">=&gt;</span>
+      F<span style="color:#f92672">.</span>delay<span style="color:#f92672">(</span>process<span style="color:#f92672">.</span>destroy<span style="color:#f92672">())</span>
+    <span style="color:#f92672">})</span>
+  <span style="color:#f92672">}</span> <span style="color:#66d9ef">yield</span> <span style="color:#f92672">(</span>blocker<span style="color:#f92672">,</span> process<span style="color:#f92672">)).</span>flatMap<span style="color:#f92672">({</span> <span style="color:#66d9ef">case</span> <span style="color:#f92672">(</span>blocker<span style="color:#f92672">,</span> process<span style="color:#f92672">)</span> <span style="color:#66d9ef">=&gt;</span>
+    readInputStream<span style="color:#f92672">(</span>F<span style="color:#f92672">.</span>delay<span style="color:#f92672">(</span>process<span style="color:#f92672">.</span>getInputStream<span style="color:#f92672">),</span> <span style="color:#ae81ff">512</span><span style="color:#f92672">,</span> blocker<span style="color:#f92672">)</span>
+      <span style="color:#f92672">.</span>concurrently<span style="color:#f92672">(</span>readInputStream<span style="color:#f92672">(</span>F<span style="color:#f92672">.</span>delay<span style="color:#f92672">(</span>process<span style="color:#f92672">.</span>getErrorStream<span style="color:#f92672">),</span> <span style="color:#ae81ff">512</span><span style="color:#f92672">,</span> blocker<span style="color:#f92672">).</span>through<span style="color:#f92672">(</span>text<span style="color:#f92672">.</span>utf8Decode<span style="color:#f92672">).</span>showLines<span style="color:#f92672">(</span><span style="color:#a6e22e">System</span><span style="color:#f92672">.</span>err<span style="color:#f92672">))</span>
+  <span style="color:#f92672">})</span>
+<span style="color:#f92672">}</span></code></pre></div>
+<p>Not a lot of things to say, it&rsquo;s actually quite straighforward.</p>
+<h4 id="from-streamf-bytes-to-streamf-message">From <code>Stream[F, Byte]</code>s to <code>Stream[F, Message]</code></h4>
+<p>Okay, this one is a little bit tricky. Until now, we concidered each messages one by one. But <code>pg_recvlogical</code> is all the changes and the protocol does not define a single message size, and there is no separator to help us split a <code>Byte</code> stream to <code>Message</code> instances.</p>
+<p>To bypass that, we&rsquo;re going to try to read <code>Byte</code> chunks, and it may either:</p>
+<ul>
+<li>Fail because there is not enough bytes, and in that case we&rsquo;re just going to read more bytes and try again;</li>
+<li>Succeed, which means retreiving both:
+<ul>
+<li>An instance of <code>Message</code> that we&rsquo;re going to emit,</li>
+<li>Some remaning bytes that&rsquo;we going to reuse in the next iteration.</li>
+</ul>
+</li>
+</ul>
+<p>In order to do that, we&rsquo;re going to switch from the push mode of <code>fs2</code> to the pull one and implement this algorithm using <code>Pull[F, Message, Unit]</code> and go back to <code>Stream[F, Message]</code> in the end.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">//</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">#</span> <span style="color:#66d9ef">&lt;&lt;&lt;</span> <span style="color:#66d9ef">messages-method</span> <span style="color:#66d9ef">&gt;&gt;&gt;</span></code></pre></div>
+<h4 id="from-streamf-message-to-streamf-changet">From <code>Stream[F, Message]</code> to <code>Stream[F, Change[T]]</code></h4>
+<p>This one is actually easy: we&rsquo;re just going to keep the <code>Message.Insert</code>, <code>Message.Update</code> and <code>Message.Delete</code> extracting the relevent <code>TupleData</code> and read it as <code>T</code> the <code>TupleDataReader</code></p>
+<p>But first, as we still need to distinguish inserts, updates or deletes, let&rsquo;s define the <code>Change[T]</code> sealed trait to hold the actual <code>T</code> instance:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">//</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">#</span> <span style="color:#66d9ef">&lt;&lt;&lt;</span> <span style="color:#66d9ef">change-trait</span> <span style="color:#66d9ef">&gt;&gt;&gt;</span></code></pre></div>
+<p>Now, we can define the <code>Change.changes</code> method that which will rely on the <code>TupleDataReader</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">//</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">#</span> <span style="color:#66d9ef">&lt;&lt;&lt;</span> <span style="color:#66d9ef">changes-method</span> <span style="color:#66d9ef">&gt;&gt;&gt;</span></code></pre></div>
+<h4 id="assemble-everything">Assemble everything</h4>
+<p>Thanks to <code>fs2</code>&rsquo;s expressiveness, it&rsquo;s actually straighforward:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala"><span style="color:#f92672">[</span><span style="color:#66d9ef">//</span><span style="color:#f92672">]</span><span style="color:#66d9ef">:</span> <span style="color:#66d9ef">#</span> <span style="color:#66d9ef">&lt;&lt;&lt;</span> <span style="color:#66d9ef">capture-method</span> <span style="color:#66d9ef">&gt;&gt;&gt;</span></code></pre></div>
+<p>And that&rsquo;s it, we can now use our library with <code>Change.capture[</code></p>
+
+    </div>
+
+            </div>
+        </div><footer class="text-center pb-1">
+    <small class="text-muted">
+        
+            &copy 2020
+        
+        <br>
+        Powered by <a href="https://gohugo.io/" target="_blank">Hugo</a>
+        and <a href="https://github.com/austingebauer/devise" target="_blank">Devise</a>
+    </small>
+</footer>
+</body>
+</html>
