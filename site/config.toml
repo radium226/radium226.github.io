@@ -1,5 +1,5 @@
-baseURL = "https://radium226.github.io"
-theme = "devise"
+baseURL = "https://blog.rouages.xyz"
+theme = "rouages"
 title = "~adrien"
 languageCode = "en-us"
 relativeURLs = true

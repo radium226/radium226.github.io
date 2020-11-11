@@ -1,0 +1,16 @@
+{{ define "main" }}
+    {{ if .Content }}
+        {{ .Content }}
+    {{ else }}
+        <div>
+            <ul>
+                {{ range .Site.RegularPages }}
+                    <li>
+                        {{ .Date.Format "Jan 2 2006" }}
+                        <a href="{{ .Permalink }}">{{ .Title }}</a>
+                    </li>
+                {{ end }}
+            </ul>
+        </div>
+    {{ end }}
+{{ end }}
